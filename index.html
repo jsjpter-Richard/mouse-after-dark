@@ -1,0 +1,3390 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#101916">
+<title>墙缝夜行 · Mouse After Dark</title>
+<style>
+:root{color-scheme:dark;--paper:#f5edda;--dim:#bdbfb0;--amber:#ffcc79;--line:#f2e8ce40;--glass:#0b1514e8}
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#182624;color:var(--paper);font-family:system-ui,"PingFang SC","Noto Sans CJK SC","Microsoft YaHei",sans-serif}
+button{font:inherit;cursor:pointer}button:focus-visible{outline:2px solid #ffcf87;outline-offset:4px}button:disabled{opacity:.5;cursor:default}
+[hidden]{display:none!important}#world,#software,#effects{position:absolute;inset:0;width:100%;height:100%;display:block}#world{touch-action:none}#software,#effects{pointer-events:none}
+#shade{position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse at 53% 46%,transparent 44%,#07100e85 100%)}
+#menu{position:absolute;inset:0;display:flex;align-items:center;background:linear-gradient(90deg,#0c1917ef 0%,#0c1917dd 25%,#0c19176b 53%,transparent 77%);overflow:auto;padding:max(5vh,24px) max(7vw,28px)}
+.intro{max-width:490px}.stamp{display:flex;align-items:center;gap:11px;color:var(--amber);font:600 11px/1.3 ui-monospace,monospace;letter-spacing:.21em}.stamp:before{content:"";width:24px;height:1px;background:currentColor}
+h1,h2,p{margin:0}h1,h2{font-family:"Songti SC","Noto Serif CJK SC","SimSun",Georgia,serif}h1{font-size:clamp(48px,7vw,108px);font-weight:800;line-height:1.02;letter-spacing:-.05em;margin:20px 0 14px;text-shadow:0 5px 30px #0005}#lead{font-size:clamp(14px,1.45vw,17px);line-height:1.82;color:#d5d4c6;max-width:330px}
+.primary{border:0;background:#f2c47d;color:#19241e;border-radius:5px;padding:14px 20px;font-size:15px;font-weight:760;min-height:49px;text-align:left;transition:background .2s,transform .2s}.primary:hover{background:#ffe0a3;transform:translateY(-1px)}.primary span{margin-left:34px}
+#menu .primary{margin-top:25px}.controls-list{margin:28px 0 0;padding:17px 0 0;border-top:1px solid var(--line);font-size:12px;color:#d7d7cb;display:grid;grid-template-columns:max-content max-content;gap:9px 17px;max-width:360px}
+kbd{display:inline-block;min-width:21px;text-align:center;background:#e9e8d31a;border:1px solid #ded9c141;border-radius:3px;padding:1px 5px;font:600 11px/1.35 ui-monospace,monospace;color:#f6ead1}
+#touchHelp{display:none;color:#d5d4c6;font-size:12px;margin-top:20px}
+#sceneLabel{position:absolute;right:max(6vw,26px);bottom:7vh;display:grid;gap:7px;text-align:right;text-shadow:0 2px 14px #000;color:#eee6ce;pointer-events:none}.chapter{font:700 10px/1.3 ui-monospace,monospace;letter-spacing:.2em;color:#ffd18a}#sceneName{font:600 clamp(22px,3vw,44px)/1.15 "Songti SC","Noto Serif CJK SC",Georgia,serif}
+#hud{position:absolute;inset:0;pointer-events:none}#hud header{position:absolute;left:clamp(12px,2.5vw,35px);top:clamp(12px,2.5vw,30px);display:grid;gap:7px;padding:13px 16px 15px;background:var(--glass);border:1px solid var(--line);border-radius:7px;min-width:211px;max-width:calc(100vw - 123px)}
+#levelName{font-size:16px;font-weight:700}#task{font-size:12px;color:#d5d9cd;line-height:1.4}#progress{display:flex;align-items:center;gap:7px;font-size:11px;color:#e7dac1}.pip{width:9px;height:9px;transform:rotate(45deg);border:1px solid #f0c98a7a;margin-right:2px}.pip.filled{background:var(--amber);border-color:var(--amber);box-shadow:0 0 10px #ffd7837a}
+#tools{position:absolute;top:clamp(12px,2.5vw,30px);right:clamp(12px,2.5vw,35px);display:flex;gap:7px;pointer-events:auto}.utility{color:var(--paper);background:var(--glass);border:1px solid var(--line);border-radius:5px;min-height:36px;padding:0 9px;font-size:12px}.utility:hover{background:#26342e}
+#crosshair{position:absolute;top:50%;left:50%;width:4px;height:4px;margin:-2px;border-radius:50%;background:#fff3d9b0;box-shadow:0 0 5px #0006}
+#prompt,#toast{position:absolute;left:50%;transform:translateX(-50%);text-align:center;width:max-content;max-width:88vw;text-shadow:0 2px 9px #000,0 1px 4px #000;line-height:1.5;font-size:13px}
+#prompt{top:calc(50% + 26px);padding:6px 12px;background:#101916d9;border-radius:4px;border:1px solid #e9d7af43}
+#toast{top:20%;font-weight:700;color:#ffe0a2;letter-spacing:.04em}#alert{position:absolute;top:35px;left:50%;transform:translateX(-50%);width:138px;text-align:center}#alertText{display:block;font-size:11px;margin-bottom:6px;text-shadow:0 1px 7px #000;font-weight:700}.bar{display:block;background:#111e1ae8;border:1px solid #e2ded443;height:6px;overflow:hidden;border-radius:9px}.bar i{display:block;height:100%;width:100%;transform-origin:left;background:#d2d3b6}
+#alertFill{background:#ed996f}.danger #alertFill{background:#ff8462}.danger #alertText{color:#ffc2a9}
+#abilities{position:absolute;bottom:clamp(14px,2.5vw,33px);left:clamp(12px,2.5vw,35px);right:clamp(12px,2.5vw,35px);display:flex;justify-content:space-between;align-items:flex-end;gap:10px;color:#f4eedc}.ability{padding:8px 10px;background:var(--glass);border:1px solid var(--line);border-radius:5px;font-size:12px;min-width:106px}.ability .bar{margin-top:6px}#staminaFill{background:#b1cab1}#sniffFill{background:#efc87c}#stance{align-self:flex-end;font-size:11px;color:#dfe3d1;text-shadow:0 1px 6px #000;padding-bottom:6px}
+.marker{position:absolute;transform:translate(-50%,-50%);font-size:12px;font-weight:700;color:#ffdc91;text-shadow:0 2px 8px #000;padding:4px 8px;border:1px solid #ffce7480;border-radius:4px;background:#191c14cf;white-space:nowrap}.marker.home{color:#bde6c1;border-color:#a7e7b37a}
+#modal{position:absolute;inset:0;display:grid;place-items:center;background:#091211c7;padding:20px}.dialog{width:min(410px,100%);background:#152320;border:1px solid var(--line);padding:clamp(20px,5vw,38px);border-radius:8px;box-shadow:0 18px 80px #0008}.dialog h2{font-size:clamp(30px,5vw,43px);margin:11px 0}.dialog p{font-size:14px;line-height:1.65;color:#d1d8cb;margin-bottom:20px}.dialog-actions{display:flex;align-items:center;gap:12px;flex-wrap:wrap}.dialog .primary span{margin-left:16px}
+#touch{display:none;position:absolute;bottom:21px;left:16px;right:16px;pointer-events:none;justify-content:space-between;align-items:end;gap:10px}.touch-group{display:grid;grid-template-columns:repeat(3,44px);gap:3px}.touch-actions{grid-template-columns:repeat(2,47px)}.touch-button{pointer-events:auto;touch-action:none;min-height:42px;border:1px solid #f2ead057;border-radius:6px;background:#162320d9;color:var(--paper);font-weight:650;font-size:13px}.touch-button:active{background:#8e6335}.touch-button.up{grid-column:2}.touch-button.left{grid-column:1}
+@media (pointer:coarse){#hud #touch{display:flex}#abilities{bottom:119px}#touchHelp{display:block}.controls-list{display:none}}
+@media (max-width:560px){#menu{background:linear-gradient(90deg,#0c1917e8,#0c19178c 69%,#0c191739)}#sceneLabel{display:none}#alert{top:121px}#abilities{gap:5px}.ability{min-width:90px;font-size:11px}#stance{font-size:10px}}
+@media (max-height:480px){#menu{align-items:start}.controls-list{margin-top:16px}.intro h1{margin-top:10px}#menu .primary{margin-top:13px}#lead{line-height:1.5}}
+
+#clues{display:flex;align-items:center;gap:8px;font-size:11px;color:#e7dac1}
+#clueDigits{color:var(--amber);font:700 13px ui-monospace,monospace;letter-spacing:.16em}
+#lockPrompt{position:absolute;left:50%;top:calc(50% + 26px);transform:translateX(-50%);padding:6px 12px;min-height:42px;pointer-events:auto;background:#101916ed;border:1px solid #f2c47d95;border-radius:4px;color:var(--amber);font-size:13px;white-space:nowrap}
+#lockPrompt:hover{background:#29352b}#lockPrompt kbd{margin-right:5px}
+#lockScreen{position:absolute;inset:0;display:grid;place-items:center;background:#091211c7;padding:18px;overflow:auto}
+#lockScreen .dialog{border-color:#d3a96b75}
+#lockForm label{display:block;color:#e9d9b8;font-size:12px;margin-bottom:6px}
+#lockCode{width:100%;height:52px;padding:6px 14px;color:var(--amber);background:#0d1714;border:1px solid #d3a96b75;border-radius:5px;font:700 24px ui-monospace,monospace;letter-spacing:.42em}
+#lockCode:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
+#lockCode[aria-invalid=true]{border-color:#ff9d80}#lockCode::placeholder{color:#babb9d80}
+#lockKeys{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:9px}
+.lock-key{height:44px;background:#28362c;color:var(--amber);border:1px solid #ddc8a44a;border-radius:4px;font:700 18px ui-monospace,monospace}
+.lock-key:hover:not(:disabled){background:#3a4738}
+#lockStatus{min-height:22px;color:#ffbb9d;margin:7px 0 2px}
+#lockHistory{font-size:12px;color:#c2cabb;line-height:1.5;overflow-wrap:anywhere;margin:0 0 9px}
+@media (pointer:coarse){#lockPrompt kbd{display:none}}
+@media (max-width:560px){#alert{top:152px}}
+@media (max-height:480px){#lockScreen{place-items:start center}}
+#menu .mode-actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:25px}#menu .mode-actions .primary{margin:0}
+#menu .mode-actions .utility{min-height:49px;padding:0 15px;border-color:#f2c47d85;font-size:14px;font-weight:700}
+#coopLobby{position:absolute;inset:0;z-index:5;display:grid;place-items:center;background:#091211dd;padding:18px;overflow:auto}
+#coopLobby .dialog{width:min(490px,100%);border-color:#d3a96b75}#lobbyStatus{min-height:18px;color:#f3cc89;margin:13px 0 9px;font-size:12px;overflow-wrap:anywhere}
+.lobby-choice{display:flex;gap:9px;flex-wrap:wrap}.lobby-choice .utility{padding:0 14px;font-size:14px}
+.short-room{display:grid;gap:9px;margin:5px 0 13px}
+.short-room label{font-size:14px;font-weight:700;color:#f3d19b}
+.short-room-row{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.short-room input{width:11ch;min-height:45px;border:1px solid #dbc59584;border-radius:5px;background:#101916;color:#ffda95;padding:5px 9px;font:700 20px ui-monospace,monospace;letter-spacing:.15em;text-transform:uppercase}
+.short-room input::placeholder{color:#a9ad95;font-weight:500}
+.short-room .primary{min-height:45px;padding:9px 13px}
+#shortHostPanel small{font-size:12px;color:#bdc6b7}
+.short-room #lanInviteValue{width:100%;min-height:37px;font-size:12px;letter-spacing:0;text-transform:none}
+#manualPairing{margin-top:14px;border-top:1px solid #cfc7a942;padding-top:10px;color:#c9d2c5;font-size:13px}
+#manualPairing summary{cursor:pointer}#manualPairing .lobby-choice{margin-top:9px}
+.code-box{display:grid;gap:7px;margin:0 0 12px}.code-box label{color:#edc88a;font-size:13px;font-weight:680}
+.code-box textarea{width:100%;resize:vertical;min-height:51px;max-height:122px;padding:7px 8px;border:1px solid #e7d9b455;border-radius:4px;background:#101916;color:#e9e4d5;font:12px/1.4 ui-monospace,monospace}
+.code-box button{justify-self:start}
+.invite-tools{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.invite-tools .primary{min-height:38px;padding:7px 12px;font-size:13px}
+#ownCodeDetails summary{cursor:pointer;font-size:12px;color:#d2d7c7;margin-bottom:5px}
+#ownCodeDetails textarea{margin-top:4px}
+#coopSignals{position:absolute;left:50%;top:calc(50% + 38px);transform:translateX(-50%);max-width:calc(100vw - 22px);width:max-content;padding:9px 11px;background:#111d18ef;border:1px solid #d5c29875;border-radius:6px;pointer-events:auto;display:grid;gap:7px;text-align:center;color:#ffe2a8;font-size:12px}
+#coopSignalButtons{display:flex;flex-wrap:wrap;justify-content:center;gap:5px}#coopSignalButtons button{min-width:34px;padding:0 5px}#coopSignalButtons button:first-child,#coopSignalButtons button:nth-child(2){padding:0 8px}
+#guestConnected{color:#b9dbc1;font-size:11px;font-weight:660}#endCoop{white-space:nowrap}
+#cageScreen{position:absolute;inset:0;z-index:4;overflow:auto;background:radial-gradient(ellipse at 18% 14%,#29382b,#121e1b 58%,#0d1716);color:#f4ecd7}
+.cage-shell{margin:auto;max-width:1080px;padding:clamp(16px,5vw,52px)}.cage-top{display:flex;justify-content:space-between;align-items:center;gap:14px;margin-bottom:18px}.cage-top h2{font-size:clamp(30px,5vw,53px);margin-top:8px;line-height:1.1}.cage-actions{display:flex;flex-wrap:wrap;gap:6px}
+.cage-layout{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:14px;align-items:start}.cage-side{display:grid;gap:14px}
+.cage-panel{min-width:0;background:#162520;border:1px solid #e2ce9b4f;border-radius:7px;padding:clamp(13px,2vw,21px)}
+.cage-heading{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-bottom:6px}.cage-heading h3{font-weight:750;font-size:16px;margin:0}.cage-heading span{font-size:11px;color:#d8bc8a}
+.cage-panel p{font-size:13px;line-height:1.53;color:#c6cebf}
+.maze-grid{--cols:9;display:grid;grid-template-columns:repeat(var(--cols),1fr);gap:2px;margin:13px 0 11px;max-width:480px;width:100%;border:1px solid #beb19838;border-radius:5px;overflow:hidden;background:#14251f;padding:2px;touch-action:manipulation}
+.maze-tile{aspect-ratio:1;position:relative;background:#31463b;border:0;border-radius:2px;min-width:0;padding:0;cursor:default;color:#fff3d2;display:grid;place-items:center;font:700 clamp(12px,2.2vw,22px) ui-monospace,monospace}
+.maze-tile.wall{background:repeating-linear-gradient(125deg,#574c3c 0,#574c3c 3px,#4a4234 3px,#4a4234 6px)}
+.maze-tile.plate{color:#df9e53;background:#624d35}.maze-tile.lit{background:#b38349;color:#201b12}
+.maze-tile.exit{background:#543e33;color:#e5aa84}.maze-tile.open{background:#346047;color:#bcf3c4}.maze-tile.reachable{cursor:pointer;box-shadow:inset 0 0 0 1px #afc69a48}
+.maze-tile.reachable:hover{background:#4f6351}.maze-tile.mouse:after{content:"";position:absolute;width:55%;height:55%;border-radius:55%;background:#e4bf8d;border:2px solid #fff2c4;box-shadow:0 0 10px #f6d49a70}
+.maze-foot{display:flex;justify-content:space-between;gap:9px;color:#a9b9aa;font-size:11px}.maze-foot i{display:inline-block;width:8px;height:8px;background:#bd8c50;transform:rotate(45deg);margin-right:5px}
+#cageSignalStatus{min-height:16px;color:#d4cdb9;font-size:11px}
+#coopSignals[data-danger=true]{border-color:#f0a086c5}#coopSignals[data-danger=true] #cageSignalStatus{color:#ffc0a3}
+#cageSignOrder,.cage-reply-text{overflow-wrap:anywhere}
+.cage-reply-text{padding:5px 8px;background:#29382c;border-left:2px solid #deb672;color:#ffe4aa}
+.signal-picture{min-height:82px;display:flex;align-items:center;gap:8px;border:1px solid #c9c2a933;border-radius:5px;background:linear-gradient(90deg,#0d1915,#22322a);margin:9px 0;overflow:hidden;padding-right:8px}
+.signal-picture canvas{width:140px;flex:0 0 42%;max-width:140px;height:82px;object-fit:contain}.signal-picture .gesture-guide{font-size:11px;color:#a9bbac;margin-top:3px}
+#signalText{color:#f4d598;font-weight:670}
+.squeak-heading{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:11px 0 5px;color:#b9c3b4;font-size:11px}
+#squeakHistory{list-style:none;display:grid;gap:4px;margin:0;padding:0}
+#squeakEmpty{font-size:12px}
+.squeak-replay{width:100%;min-height:33px;padding:4px 8px;display:grid;grid-template-columns:minmax(46px,auto) 1fr auto;align-items:center;gap:8px;text-align:left;color:#e9e4d0;background:#192c24;border:1px solid #aebe9c42;border-radius:4px;font-size:11px}
+.squeak-replay:hover,.squeak-replay.playing{background:#2a3d30;border-color:#d5ad6e}.squeak-replay .replay-label{color:#e9c385}
+.squeak-dots{display:flex;align-items:center;gap:5px}.squeak-dot{width:9px;height:9px;border-radius:50%;background:#f7ca7b;box-shadow:0 0 6px #ffca7b86}
+.cage-replies{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}.cage-replies button{min-height:33px}
+#cageContact{margin-top:6px;color:#b0c7b3;font-size:11px}
+#lobbyActions{display:flex;flex-wrap:wrap;gap:7px}
+@media (pointer:coarse){#coopSignalButtons kbd{display:none}}
+.cage-mechanism{display:grid;gap:13px;margin-top:11px}
+.mechanism-step{min-width:0;border:0;border-top:1px solid #cfbd9440;padding:12px 0 0;margin:0}
+.mechanism-step legend,.mechanism-step h4{margin:0;color:#f1d9a9;font-size:13px;font-weight:750}
+.mechanism-step p{margin-top:4px}
+.lamp-choices{display:flex;gap:7px;margin-top:8px}
+.lamp-option{display:flex;gap:6px;align-items:center;min-height:36px;padding:5px 9px;border:1px solid #aebb9d62;border-radius:5px;color:#dddcc8;font-size:12px;cursor:pointer}
+.lamp-option:has(input:checked){border-color:#efc27c;background:#51462e;color:#ffe4a6}
+.lamp-option input{accent-color:#f2c47d}
+.lamp-bulb{width:9px;height:9px;border-radius:50%;background:#eac174;box-shadow:0 0 7px #eac1748a}
+.lamp-bulb.off{background:#778277;box-shadow:none}
+.latch-buttons{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px;margin:9px 0}
+.latch-button{display:grid;place-items:center;min-height:54px;padding:4px 2px;color:#e9ddbe;background:#22352b;border:1px solid #bfc19a69;border-bottom:4px solid #101e16;border-radius:5px;font-size:11px}
+.latch-handle{font-size:19px;line-height:1.1;color:#efce90}.latch-button.pulled{background:#57472d;border-color:#d7ad69;transform:translateY(2px)}
+.latch-button.pulled .latch-handle{color:#fff1bb}.latch-button:not(:disabled):hover{background:#3b4938}
+#cageLatchQueue{min-height:20px;padding:4px 0;color:#f6d49b;font-weight:650;overflow-wrap:anywhere}
+.cage-mechanism-actions{display:flex;align-items:center;flex-wrap:wrap;gap:6px}.cage-mechanism-actions .primary{min-height:39px;padding:7px 13px}
+.cage-left{display:grid;gap:14px;min-width:0}
+#cageViewport{height:clamp(150px,22vh,234px);width:100%;position:relative;overflow:hidden;border-radius:5px;border:1px solid #d5bd8660;background:#10201b}
+.cage-window-controls{display:flex;gap:6px;margin:8px 0 0}.cage-window-controls button{min-height:34px}
+#cageWindowStatus{color:#adc9ae;font-size:11px}
+#cageGateStatus{font-size:12px}.cue-symbol{color:#f6ce88;font-weight:700;min-width:0}
+#coopSignalButtons kbd{margin-right:3px}
+
+#cageFeedback:not(:empty){margin-top:10px;color:#ffcdab}#cageNotice{position:sticky;bottom:8px;padding:12px 13px;margin-top:12px;background:#253a2e;border:1px solid #b9c5a25c;border-radius:6px;font-weight:680;font-size:14px}
+@media(max-width:660px){.cage-layout{grid-template-columns:1fr}.cage-top{align-items:start}.cage-top h2{font-size:30px}.cage-actions{justify-content:flex-end}.maze-grid{max-width:330px}.cage-shell{padding:15px}}
+@media (max-width:560px){#endCoop{position:absolute;right:0;top:41px}.coop-playing #hud header{min-width:0;max-width:calc(100vw - 132px)}.coop-playing #alert{top:170px}}
+@media(max-height:560px){#coopLobby{place-items:start center}}
+.language-picker{display:flex;gap:5px;margin-top:18px}
+.language-picker .utility{min-height:32px;padding:0 10px}
+.language-picker [aria-pressed="true"]{color:#ffd698;border-color:#f2c47d85}
+#coopLobby .language-picker{margin:0 0 14px}
+html[lang=en] #menu .intro>.stamp{display:none}
+html[lang=en] #menu h1{font-size:clamp(48px,8vw,82px);max-width:12ch}
+html[lang=en] #coopLobby{align-items:safe center}
+@media(pointer:coarse){html[lang=en] .touch-actions{grid-template-columns:repeat(2,55px)}}
+@media(max-width:560px){html[lang=en] #tools .utility{padding:0 6px}}
+
+</style>
+</head>
+<body>
+<canvas id="world" aria-label="第一人称 3D 游戏画面"></canvas><canvas id="software" aria-hidden="true" hidden></canvas><canvas id="effects" aria-hidden="true"></canvas><div id="shade"></div>
+<section id="menu" aria-label="游戏主菜单">
+  <div class="intro">
+    <div class="stamp">MOUSE AFTER DARK</div>
+    <h1>墙缝夜行</h1>
+    <p id="lead">厨房熄灯了。钻出墙缝，跟着气味找吃的。猫也醒着。</p>
+    <div class="mode-actions"><button id="start" class="primary">单人游戏 <span aria-hidden="true">→</span></button><button id="openCoop" class="utility">联机双人</button></div>
+    <div class="controls-list"><div><kbd>WASD</kbd> 移动</div><div>鼠标 / 拖动 转视角</div><div><kbd>C</kbd> 贴地潜行</div><div><kbd>Q</kbd> 嗅闻</div><div><kbd>Space</kbd> 跳跃</div><div><kbd>Shift</kbd> 冲刺</div></div>
+    <p id="touchHelp">拖动画面转视角，点方向键移动。</p>
+    <div class="language-picker" role="group" aria-label="语言"><button type="button" class="utility" data-language="zh" lang="zh-CN" aria-pressed="true">中文</button><button type="button" class="utility" data-language="en" lang="en" aria-pressed="false">English</button></div>
+  </div>
+  <div id="sceneLabel"><span class="chapter">CHAPTER 01</span><span id="sceneName">灯熄后的厨房</span></div>
+</section>
+<div id="hud" hidden>
+  <header><span class="chapter" id="chapter"></span><strong id="levelName"></strong><span id="task"></span><div id="progress"></div><div id="clues"><span id="clueHeading">数字线索</span><span id="clueDigits"></span></div><span id="guestConnected" hidden>联机 · 笼外</span></header>
+  <div id="tools"><button id="audio" class="utility" aria-label="切换音效" aria-pressed="true">音效 开</button><button id="pause" class="utility">暂停</button><button id="endCoop" class="utility" hidden>退出联机</button></div>
+  <div id="alert"><span id="alertText">猫没发现你</span><span class="bar"><i id="alertFill"></i></span></div>
+  <span id="crosshair"></span><p id="prompt" hidden></p><button id="lockPrompt" type="button" hidden><kbd>E</kbd> 打开密码锁</button><p id="toast" role="status" hidden></p>
+  <div id="markers"></div>
+  <div id="coopSignals" hidden>
+    <strong id="cageLampText"></strong>
+    <span id="cageSignOrder"></span>
+    <span id="cageReplyText" class="cage-reply-text" role="status" hidden></span>
+    <div id="coopSignalButtons">
+      <button type="button" class="utility" data-kind="gesture" data-count="1"><kbd>R</kbd> 一爪 · 灯亮</button>
+      <button type="button" class="utility" data-kind="gesture" data-count="2"><kbd>T</kbd> 两爪 · 灯灭</button>
+    </div>
+    <span id="cageSignalStatus"></span>
+  </div>
+  <div id="abilities"><div class="ability"><span id="sniffLabel">Q · 嗅闻</span><span class="bar"><i id="sniffFill"></i></span></div><div id="stance">慢走 · C 潜行</div><div class="ability">体力<span class="bar"><i id="staminaFill"></i></span></div></div>
+  <div id="touch" aria-label="触屏控制">
+    <div class="touch-group"><button class="touch-button up" data-key="KeyW" aria-label="向前">▲</button><button class="touch-button left" data-key="KeyA" aria-label="向左">◀</button><button class="touch-button" data-key="KeyS" aria-label="向后">▼</button><button class="touch-button" data-key="KeyD" aria-label="向右">▶</button></div>
+    <div class="touch-group touch-actions"><button class="touch-button" data-key="KeyQ">嗅闻</button><button class="touch-button" data-key="KeyC">潜行</button><button class="touch-button" data-key="Space">跳跃</button><button class="touch-button" data-key="ShiftLeft">冲刺</button></div>
+  </div>
+</div>
+<div id="modal" hidden><section class="dialog" role="dialog" aria-modal="true" aria-labelledby="modalTitle"><div class="stamp" id="modalTag"></div><h2 id="modalTitle"></h2><p id="modalCopy"></p><div class="dialog-actions"><button id="modalAction" class="primary"><span aria-hidden="true">→</span></button><button id="modalOther" class="utility"></button></div></section></div>
+<div id="lockScreen" hidden>
+  <section class="dialog" role="dialog" aria-modal="true" aria-labelledby="lockTitle">
+    <div class="stamp" id="lockChapter"></div>
+    <h2 id="lockTitle">墙洞密码锁</h2>
+    <p id="lockInstructions">这三个数字各用一次。换个顺序，试到锁打开为止。</p>
+    <form id="lockForm" novalidate>
+      <label for="lockCode">输入三位密码</label>
+      <input id="lockCode" type="text" inputmode="numeric" maxlength="3" autocomplete="off" spellcheck="false" placeholder="···" aria-describedby="lockInstructions">
+      <div id="lockKeys" aria-label="收集到的数字"></div>
+      <p id="lockStatus" role="status"></p>
+      <p id="lockHistory" hidden></p>
+      <div class="dialog-actions"><button type="submit" class="primary">试着开锁 <span aria-hidden="true">→</span></button><button id="closeLock" type="button" class="utility">先离开</button></div>
+    </form>
+  </section>
+</div>
+<div id="coopLobby" hidden>
+  <section class="dialog" role="dialog" aria-modal="true" aria-labelledby="lobbyTitle">
+    <div class="stamp">MOUSE AFTER DARK · CO-OP</div>
+    <h2 id="lobbyTitle">隔笼暗号</h2>
+    <div class="language-picker" role="group" aria-label="语言"><button type="button" class="utility" data-language="zh" lang="zh-CN" aria-pressed="true">中文</button><button type="button" class="utility" data-language="en" lang="en" aria-pressed="false">English</button></div>
+    <p>一人创建房间，把 6 位房间码发给朋友。朋友输入后，两边会自动进入游戏。</p>
+    <div id="lobbyChoice" class="lobby-choice">
+      <button class="primary" id="hostRoom">创建房间 · 笼外</button>
+      <button class="utility" id="joinRoom">输入房间码 · 笼内</button>
+    </div>
+    <div id="shortHostPanel" class="short-room" hidden>
+      <label for="shortRoomCode">发给队友的房间码</label>
+      <div class="short-room-row"><input id="shortRoomCode" type="text" readonly placeholder="······" spellcheck="false"><button id="copyShortRoom" class="primary" type="button" disabled>复制房间码</button></div>
+      <button id="copyLanInvite" type="button" class="primary" hidden>复制邀请链接</button>
+      <input id="lanInviteValue" type="text" readonly hidden aria-label="给队友的局域网邀请链接">
+      <small>房间最多等候 10 分钟。队友加入后会自动开始。</small>
+    </div>
+    <form id="shortGuestForm" class="short-room" hidden>
+      <label for="shortJoinValue">队友的 6 位房间码</label>
+      <div class="short-room-row"><input id="shortJoinValue" type="text" maxlength="14" placeholder="M7K2PX" autocomplete="off" autocapitalize="characters" spellcheck="false"><button id="submitShortRoom" class="primary" type="submit">加入房间</button></div>
+    </form>
+    <details id="manualPairing">
+      <summary>手动配对</summary>
+      <div class="lobby-choice"><button id="hostManual" class="utility" type="button">生成邀请码</button><button id="joinManual" class="utility" type="button">粘贴邀请码</button></div>
+    </details>
+    <div id="roomSteps" hidden>
+      <div id="inviteIn" class="code-box" hidden>
+        <label id="receivedLabel" for="receivedCode"></label>
+        <div class="invite-tools"><button id="pasteRoomCode" class="utility" type="button">粘贴连接码</button></div>
+        <textarea id="receivedCode" rows="2" spellcheck="false" placeholder="粘贴队友发来的完整连接码"></textarea>
+        <button id="processCode" class="primary"></button>
+      </div>
+      <div id="inviteOut" class="code-box" hidden>
+        <label id="ownLabel" for="ownCode"></label>
+        <div class="invite-tools">
+          <button id="copyRoomCode" class="primary" type="button">复制连接码</button>
+        </div>
+        <details id="ownCodeDetails">
+          <summary>查看完整连接码</summary>
+          <textarea id="ownCode" rows="2" readonly spellcheck="false" aria-labelledby="ownLabel"></textarea>
+        </details>
+      </div>
+    </div>
+    <p id="lobbyStatus" role="status"></p>
+    <div id="lobbyActions"><button id="resetLobby" class="utility" hidden>重新配对</button><button id="closeLobby" class="utility">返回主菜单</button></div>
+  </section>
+</div>
+<main id="cageScreen" hidden aria-label="笼内视角">
+  <div class="cage-shell">
+    <header class="cage-top">
+      <div><div class="stamp" id="cageChapter">联机合作 · 笼内</div><h2 id="cageTitle">隔笼暗号</h2></div>
+      <div class="cage-actions"><button id="cageAudio" type="button" class="utility" aria-pressed="true">音效 开</button><button id="leaveCage" class="utility">离开联机</button></div>
+    </header>
+    <div class="cage-layout">
+      <div class="cage-left">
+      <section class="cage-panel">
+        <div class="cage-heading"><h3>透过栏杆</h3><span id="cageWindowStatus" role="status">等待笼外画面</span></div>
+        <div id="cageViewport" aria-label="从笼里往外看的实时画面"></div>
+        <div class="cage-window-controls"><button id="cageLookLeft" type="button" class="utility">往左看</button><button id="cageLookForward" type="button" class="utility">看笼门</button><button id="cageLookRight" type="button" class="utility">往右看</button></div>
+      </section>
+      <section class="cage-panel maze-panel">
+        <div class="cage-heading"><h3>笼内迷宫</h3><span id="plates"></span></div>
+        <p id="mazeTask">走到金色踏板上，给笼门机关通电。</p>
+        <div id="mazeGrid" class="maze-grid" aria-label="笼内迷宫，可用方向键或点相邻格移动"></div>
+        <div class="maze-foot">方向键 / WASD / 点相邻格 <span><i></i> 机关</span></div>
+      </section>
+      </div>
+      <div class="cage-side">
+        <section class="cage-panel signals-panel">
+          <div class="cage-heading"><h3>栏杆外的暗号</h3><span id="outsideProgress"></span></div>
+          <div class="signal-picture">
+            <canvas id="signalMouse" width="140" height="82" aria-hidden="true"></canvas>
+            <div><p id="signalText" role="status">还没收到举爪暗号</p><p class="gesture-guide">一只爪＝灯亮，两只爪＝灯灭</p></div>
+          </div>
+          <div class="squeak-heading"><span>最近的吱声</span><span>一串吱声代表一个图案</span></div>
+          <p id="squeakEmpty">还没听到吱声。</p>
+          <ol id="squeakHistory" aria-label="最近三串吱声，点击重听"></ol>
+          <div class="cage-replies">
+            <button id="cageConfirm" type="button" class="utility" disabled>暗号收到</button>
+            <button id="cageRepeat" type="button" class="utility" disabled>请再传一次</button>
+          </div>
+          <p id="cageContact" role="status">等队友到笼边。</p>
+        </section>
+        <section class="cage-panel">
+          <div class="cage-heading"><h3>笼门机关</h3></div>
+          <form id="cageForm" class="cage-mechanism">
+            <fieldset id="cageLamp" class="mechanism-step">
+              <legend>灯的拨杆</legend>
+              <p>门灯在笼外。看队友举爪，把拨杆拨到和门灯一样的状态。</p>
+              <div class="lamp-choices">
+                <label class="lamp-option"><input name="lamp" type="radio" value="lit"><i class="lamp-bulb" aria-hidden="true"></i>灯亮</label>
+                <label class="lamp-option"><input name="lamp" type="radio" value="dark"><i class="lamp-bulb off" aria-hidden="true"></i>灯灭</label>
+              </div>
+            </fieldset>
+            <section class="mechanism-step" aria-labelledby="latchTitle">
+              <h4 id="latchTitle">图案扣件</h4>
+              <p>照暗号的顺序扳。比如先收到月亮，再收到叶子，就先扳月亮，再扳叶子。</p>
+              <div id="cageLatchButtons" class="latch-buttons"></div>
+              <p id="cageLatchQueue" aria-label="当前扳动顺序">等待机关通电</p>
+            </section>
+            <p id="cageGateStatus">先走迷宫踩亮踏板。</p>
+            <div class="cage-mechanism-actions">
+              <button id="cageSubmit" class="primary" type="submit" disabled>拉开笼门</button>
+              <button id="undoCageLatch" class="utility" type="button" disabled>退回一扣</button>
+            </div>
+          </form>
+          <p id="cageFeedback" role="status"></p>
+        </section>
+      </div>
+    </div>
+    <p id="cageNotice" role="status" hidden></p>
+  </div>
+</main>
+<script>
+'use strict';
+const $ = id => document.getElementById(id);
+const englishUi={
+  "墙缝夜行 · Mouse After Dark": "Mouse After Dark",
+  "墙缝夜行": "Mouse After Dark",
+  "第一人称 3D 游戏画面": "First-person 3D game view",
+  "游戏主菜单": "Main menu",
+  "语言": "Language",
+  "厨房熄灯了。钻出墙缝，跟着气味找吃的。猫也醒着。": "The kitchen lights are out. Slip through the wall and follow your nose to food. The cat is awake, too.",
+  "单人游戏": "Single Player",
+  "联机双人": "Two-Player Co-op",
+  "移动": "Move",
+  "鼠标 / 拖动 转视角": "Mouse / drag to look",
+  "贴地潜行": "Crawl",
+  "嗅闻": "Sniff",
+  "跳跃": "Jump",
+  "冲刺": "Sprint",
+  "拖动画面转视角，点方向键移动。": "Drag to look around. Tap the arrow buttons to move.",
+  "灯熄后的厨房": "The Dark Kitchen",
+  "联机 · 笼外": "Co-op · Outside",
+  "切换音效": "Toggle sound effects",
+  "音效 开": "Sound On",
+  "音效 关": "Sound Off",
+  "暂停": "Pause",
+  "退出联机": "Leave Co-op",
+  "猫没发现你": "Unseen by the cat",
+  "打开密码锁": "Open Lock",
+  "一爪 · 灯亮": "One Paw · Light On",
+  "两爪 · 灯灭": "Two Paws · Light Off",
+  "Q · 嗅闻": "Q · Sniff",
+  "慢走 · C 潜行": "Walking · C to Crawl",
+  "体力": "Stamina",
+  "触屏控制": "Touch controls",
+  "向前": "Move forward",
+  "向左": "Move left",
+  "向后": "Move backward",
+  "向右": "Move right",
+  "潜行": "Crawl",
+  "墙洞密码锁": "Wall Lock",
+  "这三个数字各用一次。换个顺序，试到锁打开为止。": "Use each of the three digits once. Try different orders until the lock opens.",
+  "输入三位密码": "Enter a three-digit code",
+  "收集到的数字": "Collected digits",
+  "试着开锁": "Try Code",
+  "先离开": "Back",
+  "隔笼暗号": "Signals Through the Bars",
+  "一人创建房间，把 6 位房间码发给朋友。朋友输入后，两边会自动进入游戏。": "Create a room and share its six-character code with a friend. The game starts when they join.",
+  "创建房间 · 笼外": "Host Room · Outside",
+  "输入房间码 · 笼内": "Join by Code · Inside",
+  "发给队友的房间码": "Room code to share",
+  "复制房间码": "Copy Room Code",
+  "复制邀请链接": "Copy Invite Link",
+  "给队友的局域网邀请链接": "Same-Wi-Fi invite link",
+  "房间最多等候 10 分钟。队友加入后会自动开始。": "The room stays open for 10 minutes. The game starts when your partner joins.",
+  "队友的 6 位房间码": "Your partner’s six-character code",
+  "加入房间": "Join Room",
+  "手动配对": "Manual Connection",
+  "生成邀请码": "Create Invite Code",
+  "粘贴邀请码": "Paste Invite Code",
+  "粘贴连接码": "Paste Connection Code",
+  "粘贴队友发来的完整连接码": "Paste the full connection code from your partner",
+  "复制连接码": "Copy Connection Code",
+  "查看完整连接码": "Show Full Connection Code",
+  "重新配对": "Reconnect",
+  "返回主菜单": "Main Menu",
+  "笼内视角": "Inside the cage",
+  "联机合作 · 笼内": "Co-op · Inside",
+  "离开联机": "Leave Co-op",
+  "透过栏杆": "Through the Bars",
+  "等待笼外画面": "Waiting for Outside View",
+  "从笼里往外看的实时画面": "Live view from inside the cage",
+  "往左看": "Look Left",
+  "看笼门": "Face the Door",
+  "往右看": "Look Right",
+  "笼内迷宫": "Cage Maze",
+  "走到金色踏板上，给笼门机关通电。": "Step on the gold plate to power the cage lock.",
+  "笼内迷宫，可用方向键或点相邻格移动": "Cage maze. Use the arrow keys or tap a neighboring tile to move.",
+  "方向键 / WASD / 点相邻格": "Arrow keys / WASD / tap a neighboring tile",
+  "机关": "Power Plate",
+  "栏杆外的暗号": "Signals from Outside",
+  "还没收到举爪暗号": "Waiting for a paw signal",
+  "一只爪＝灯亮，两只爪＝灯灭": "One paw = light on. Two paws = light off.",
+  "最近的吱声": "Recent Squeaks",
+  "一串吱声代表一个图案": "Each burst of squeaks stands for one symbol",
+  "还没听到吱声。": "No squeaks yet.",
+  "最近三串吱声，点击重听": "Last three squeak signals. Tap to replay.",
+  "暗号收到": "Got It",
+  "请再传一次": "Send Again",
+  "等队友到笼边。": "Wait for your partner to reach the cage.",
+  "笼门机关": "Cage Lock",
+  "灯的拨杆": "Light Switch",
+  "门灯在笼外。看队友举爪，把拨杆拨到和门灯一样的状态。": "The light is outside the cage. Use your partner’s paw signal to match the switch to the light.",
+  "灯亮": "On",
+  "灯灭": "Off",
+  "图案扣件": "Symbol Latches",
+  "照暗号的顺序扳。比如先收到月亮，再收到叶子，就先扳月亮，再扳叶子。": "Pull the latches in the order you hear the signals. If you get Moon then Leaf, pull Moon first.",
+  "当前扳动顺序": "Current latch order",
+  "等待机关通电": "Waiting for Power",
+  "先走迷宫踩亮踏板。": "Step on the power plate in the maze first.",
+  "拉开笼门": "Open Cage Door",
+  "退回一扣": "Undo Last Latch",
+  "收集食物上的数字，打开墙洞的锁。": "Collect the digits on the food to open the wall lock.",
+  "面包屑": "Breadcrumb",
+  "奶酪": "Cheese",
+  "饼干屑": "Cookie Crumb",
+  "储藏室的窄路": "The Narrow Pantry",
+  "找到坚果上的数字。推车下有条近路。": "Find the digits on the nuts. There’s a shortcut under the trolley.",
+  "榛果": "Hazelnut",
+  "核桃": "Walnut",
+  "松子": "Pine Nut",
+  "队友的笼子": "Your Partner’s Cage",
+  "墙洞": "Mouse Hole",
+  "头顶太低，离开矮缝后会自动站起来。": "Low ceiling. You’ll stand up when you clear the gap.",
+  "猫发现你了！找柜底或拐角。": "The cat saw you! Get under a cabinet or around a corner.",
+  "猫正在追你": "The cat is chasing you",
+  "你藏在阴影里": "Hidden in the shadows",
+  "猫正在查看动静": "The cat is investigating",
+  "数字线索": "Digit Clues",
+  "锁开了，钻进墙洞。": "The lock is open. Slip through the mouse hole.",
+  "数字齐了，去墙洞试密码。": "All digits found. Try the code at the mouse hole.",
+  "删除最后一位": "Delete the last digit",
+  "请把收集到的三个数字各用一次。": "Use each of the three collected digits once.",
+  "这个顺序试过了，换一个。": "You’ve tried that order. Try another.",
+  "顺序不对，换个排列再试。": "Wrong order. Rearrange the digits and try again.",
+  "密码正确，墙洞打开了！": "Code accepted. The mouse hole is open!",
+  "往前钻进墙洞": "Move forward into the mouse hole",
+  "靠近墙洞操作密码锁": "Move closer to use the lock",
+  "按 C 贴地，钻过矮缝": "Press C to crawl through the gap",
+  "按 Q 嗅闻，寻找食物": "Press Q to sniff for food",
+  "正在嗅闻": "Sniffing",
+  "嗅闻就绪": "Sniff Ready",
+  "气味恢复中": "Sniff Recharging",
+  "冲刺 · 猫能听见": "Sprinting · The cat can hear you",
+  "慢走": "Walking",
+  "在墙边歇一会儿": "A Little Breather",
+  "WASD 移动，鼠标或方向键转视角。C 贴地潜行，Q 嗅闻，空格跳跃，Shift 冲刺，E 打开密码锁。": "WASD to move. Look with the mouse or arrow keys. C to crawl, Q to sniff, Space to jump, Shift to sprint, and E to open the lock.",
+  "继续": "Resume",
+  "重开本关": "Restart Level",
+  "被猫发现": "Caught",
+  "它追上了你": "The Cat Caught You",
+  "冲刺会引来猫。贴地钻过矮缝，或绕到柜子后面甩开它。": "Sprinting draws the cat. Crawl through a low gap or duck behind a cabinet to lose it.",
+  "再试一次": "Try Again",
+  "回到主菜单": "Main Menu",
+  "第一关通过": "Level One Complete",
+  "穿过墙洞了": "Through the Mouse Hole",
+  "你带上了厨房里的食物。隔着墙，储藏室里还有坚果的气味。": "You got the food from the kitchen. Beyond the wall, you can smell nuts in the pantry.",
+  "进入储藏室": "Enter Pantry",
+  "重玩厨房": "Replay Kitchen",
+  "两关通过": "Both Levels Complete",
+  "今晚吃饱了": "Full for the Night",
+  "你从两间屋子带回了食物，也赶在猫之前钻回了墙缝。": "You brought back food from both rooms and slipped into the wall before the cat could catch you.",
+  "从厨房再玩": "Play from the Kitchen",
+  "联机暂停": "Co-op Paused",
+  "队友也暂停了。靠近笼子后，举爪传门灯状态，再照奶酪顺序传图案。": "Your partner is paused too. At the cage, signal the light with your paws, then send the cheese symbols in order.",
+  "队友被抓": "Partner Caught",
+  "猫追上了笼外的老鼠": "The Cat Caught the Outside Mouse",
+  "等猫走远再传暗号，或者先绕到柜底避开它。": "Wait for the cat to leave before signaling, or duck under a cabinet to avoid it.",
+  "一起再试": "Try Again Together",
+  "两只老鼠都出来了": "Both Mice Are Free",
+  "储藏室要扳三个图案扣件。先看门灯，再照奶酪上的图案顺序给队友发暗号。": "The pantry cage has three symbol latches. Check the light, then send your partner the cheese symbols in order.",
+  "进入第二关": "Enter Level Two",
+  "重玩第一关": "Replay Level One",
+  "一起回到墙缝": "Back in the Wall Together",
+  "你们用举爪和吱声打开了两扇笼门。": "You opened both cages with paw signals and squeaks.",
+  "再玩一次": "Play Again",
+  "月亮": "Moon",
+  "叶子": "Leaf",
+  "水滴": "Droplet",
+  "星星": "Star",
+  "最前面": "first",
+  "第二个": "second",
+  "第三个": "third",
+  "队友请你再传一次暗号。": "Your partner asked you to send the signal again.",
+  "已请队友再传一次。": "You asked your partner to send the signal again.",
+  "队友收到了你的暗号。": "Your partner got your signal.",
+  "已告诉队友你收到了。": "You told your partner you got the signal.",
+  "实时视角": "Live View",
+  "队友已出来。钻进墙洞一起撤离。": "Your partner is out. Head through the mouse hole to escape together.",
+  "笼门已开。等队友走到迷宫出口。": "The cage door is open. Wait for your partner at the maze exit.",
+  "找齐刻着图案的奶酪。它们告诉你先扳哪个扣件。": "Find all the cheese marked with symbols. It shows the order of the latches.",
+  "奶酪齐了。到笼边传暗号，队友正在给机关通电。": "All the cheese is found. Signal at the cage while your partner powers the lock.",
+  "到笼边举爪报告门灯，再依次传奶酪图案。": "At the cage, signal the light with your paws, then send the cheese symbols in order.",
+  "扣件顺序": "Latch Order",
+  "门灯亮着 · 举一只爪告诉队友": "Light On · Raise One Paw",
+  "门灯熄了 · 举两只爪告诉队友": "Light Off · Raise Two Paws",
+  "猫在追你，先离开笼边。": "The cat is chasing you. Get away from the cage first.",
+  "猫听到了吱声，正在靠近。": "The cat heard the squeaks and is coming closer.",
+  "按 E 释放鼠标，再点图案。吱声可能引猫。": "Press E to free the mouse cursor, then click a symbol. Squeaks can draw the cat.",
+  "点图案发暗号。吱声可能引猫。": "Tap a symbol to squeak. Squeaks can draw the cat.",
+  "靠近笼子传暗号": "Get close to the cage to signal",
+  "举一只爪，传出「灯亮」": "You raised one paw for light on.",
+  "举两只爪，传出「灯灭」": "You raised both paws for light off.",
+  "队友已给笼门机关通电。": "Your partner has powered the cage lock.",
+  "队友出来了！从墙洞一起撤离。": "Your partner is out! Escape together through the mouse hole.",
+  "先踩亮迷宫里的金色踏板，给机关通电。": "Power the lock by stepping on the gold plates in the maze.",
+  "等队友找齐刻着图案的奶酪。": "Wait for your partner to collect all the marked cheese.",
+  "先拨好门灯的状态，再扳齐图案扣件。": "Set the light switch and pull all the symbol latches first.",
+  "门灯拨杆的方向不对。看看队友举的是一只爪还是两只爪。": "The light switch is set incorrectly. Check if your partner raised one paw or two.",
+  "扣件的顺序不对，扣件已复位。请队友再传一次图案。": "Wrong order. The latches reset. Ask your partner to send the symbols again.",
+  "笼门开了！等队友跑到出口。": "The cage door is open! Wait for your partner to reach the exit.",
+  "正在送出回应…": "Sending your response…",
+  "回应没送出，请稍后再试。": "Couldn’t send your response. Try again in a moment.",
+  "队友离开了笼边，靠近后可以再试。": "Your partner moved away. Try again when they’re back at the cage.",
+  "等一下再回应。": "Wait a moment before responding.",
+  "一只爪 · 把拨杆拨到灯亮": "One Paw · Set the Switch to On",
+  "两只爪 · 把拨杆拨到灯灭": "Two Paws · Set the Switch to Off",
+  "重听": "Replay",
+  "还没扳动扣件": "No Latches Pulled",
+  "笼门已打开，走到绿色出口。": "The cage door is open. Head to the green exit.",
+  "先踩亮迷宫里的金色踏板。": "Step on the gold plates in the maze first.",
+  "队友正在寻找刻着图案的奶酪。": "Your partner is looking for the marked cheese.",
+  "根据队友的举爪暗号拨灯。": "Set the light switch using your partner’s paw signal.",
+  "拨杆和扣件已就位，可以拉开笼门。": "The switch and latches are set. You can open the cage door.",
+  "开锁成功。走到绿色出口！": "Unlocked! Head to the green exit.",
+  "已出笼。等队友带你从墙洞撤离。": "You’re out of the cage. Wait for your partner to lead you through the mouse hole.",
+  "笼门已开，前往绿色出口。": "The cage is open. Go to the green exit.",
+  "机关通电了。去扳右侧的笼门扣件。": "The lock has power. Use the latches on the right.",
+  "走到每块金色踏板上，给笼门机关通电。": "Step on each gold plate to power the cage lock.",
+  "笼门已经打开。": "The cage door is open.",
+  "等下一次行动。": "Waiting for the next round.",
+  "队友在笼边，可以回应。": "Your partner is at the cage. You can respond.",
+  "队友暂停了游戏。": "Your partner paused the game.",
+  "队友被猫抓住了，等待重新开始。": "The cat caught your partner. Waiting to restart.",
+  "第一关通过。等待队友进入储藏室。": "Level one complete. Waiting for your partner to enter the pantry.",
+  "两关通过！你们一起回到了墙缝。": "Both levels complete! You made it back to the wall together.",
+  "连接信息太长，请重新配对。": "The connection data is too long. Start a new connection.",
+  "队友用的是旧版。请两个人都打开最新版，再重新配对。": "Your partner has an older version. Both players should open the latest version and try again.",
+  "连接码不完整，请重新复制整段。": "The connection code is incomplete. Copy the entire code again.",
+  "请粘贴创建者发来的邀请码。": "Paste the host’s invite code.",
+  "请粘贴加入者发回的应答码。": "Paste the reply code from the guest.",
+  "和队友的连接断开了，请重新配对。": "You lost the connection to your partner. Reconnect to try again.",
+  "连接没能建立。确认已完整交换连接码，然后重试。有些网络会阻止直连。": "Couldn’t connect. Check that you exchanged both full codes, then try again. Some networks block direct connections.",
+  "这个浏览器无法联机。请试试桌面版 Chrome、Edge 或 Safari。": "Co-op is unavailable in this browser. Try desktop Chrome, Edge, or Safari.",
+  "队友被困在笼子里。按 Q 寻找带图案的奶酪。": "Your partner is trapped in a cage. Press Q to sniff for marked cheese.",
+  "已连接。等待笼外队友开始。": "Connected. Waiting for the outside mouse to start.",
+  "房间暂时无法连接。": "Can’t reach the room right now.",
+  "房间消息顺序无法同步。": "The room couldn’t keep both players in sync.",
+  "连接超时，请两边留在游戏页面再试一次。": "Connection timed out. Keep the game open on both devices and try again.",
+  "复制邀请链接给同 Wi‑Fi 的队友，保持游戏页打开。": "Copy the invite link for your partner on the same Wi-Fi. Keep the game open.",
+  "没能连上同 Wi‑Fi 的游戏房间，请检查开房电脑上的启动窗口。": "Couldn’t reach the Wi-Fi room. Check that the launcher is running on the host computer.",
+  "已复制邀请链接，发给同 Wi‑Fi 的队友。": "Invite link copied. Send it to your partner on the same Wi-Fi.",
+  "已选中邀请链接，按 Ctrl+C 或 ⌘C 复制。": "Invite link selected. Press Ctrl+C or ⌘C to copy it.",
+  "已填好队友的房间码。点「加入房间」。": "Your partner’s room code is filled in. Select Join Room.",
+  "房间码服务暂时连不上。可以展开「手动配对」继续。": "Can’t reach the room code service. Open Manual Connection to continue.",
+  "队友暂未连上，房间仍在等候。请让对方再试一次。": "The room is still open. Ask your partner to try joining again.",
+  "没能连到队友。留在游戏页再试，或者展开「手动配对」。": "Couldn’t connect to your partner. Try again with the game open, or open Manual Connection.",
+  "正在创建房间…": "Creating a room…",
+  "这个浏览器无法联机。请用桌面版 Chrome、Edge 或 Safari 打开。": "Co-op is unavailable in this browser. Open the game in desktop Chrome, Edge, or Safari.",
+  "连接房间码服务超时，可以重试或展开「手动配对」。": "The room code service timed out. Try again or open Manual Connection.",
+  "找不到该房间。确认队友的游戏页面开着，核对房间码后再试。": "Room not found. Check the code and make sure your partner still has the game open.",
+  "房间码暂时连不上。可以重试或展开「手动配对」。": "Can’t connect with the room code right now. Try again or open Manual Connection.",
+  "与房间码服务的连接断开了，请重试。": "Disconnected from the room code service. Try again.",
+  "发给队友，留在这个页面等待加入。": "Share the code and keep this page open while your partner joins.",
+  "房间码已过期，请创建新房间。": "The room code expired. Create a new room.",
+  "加入失败。请再试一次或展开「手动配对」。": "Couldn’t join. Try again or open Manual Connection.",
+  "加入失败。请检查房间码并重试。": "Couldn’t join. Check the room code and try again.",
+  "暂时无法连接房间，请重试。": "Can’t reach the room right now. Try again.",
+  "已复制房间码，发给队友即可。": "Room code copied. Send it to your partner.",
+  "已选中房间码，按 Ctrl+C 或 ⌘C 复制。": "Room code selected. Press Ctrl+C or ⌘C to copy it.",
+  "请输入队友发来的 6 位房间码。": "Enter the six-character room code from your partner.",
+  "复制邀请码": "Copy Invite Code",
+  "复制应答码": "Copy Reply Code",
+  "正在生成邀请连接码…": "Creating an invite code…",
+  "1. 把邀请码发给队友": "1. Share the invite code",
+  "2. 粘贴队友发回的应答码": "2. Paste your partner’s reply code",
+  "建立连接": "Connect",
+  "等待队友回传应答连接码。": "Waiting for your partner’s reply code.",
+  "无法创建联机。": "Couldn’t start a co-op connection.",
+  "1. 粘贴创建者发来的邀请码": "1. Paste the host’s invite code",
+  "生成应答连接码": "Create Reply Code",
+  "生成后，把应答连接码发回给队友。": "Send the reply code back to your partner.",
+  "这不是本次邀请生成的应答连接码。": "This reply code belongs to a different invite.",
+  "正在连接队友…": "Connecting to your partner…",
+  "正在生成应答连接码…": "Creating a reply code…",
+  "2. 将应答码发回创建者": "2. Send the reply code to the host",
+  "等队友粘贴。连接成功后会自动进入笼内。": "The game starts when your partner pastes your reply code. You’ll start inside the cage.",
+  "连接码处理失败，请重试。": "Couldn’t read the connection code. Try again.",
+  "已复制，发给你的队友。": "Code copied. Send it to your partner.",
+  "已选中连接码，可以按 Ctrl+C 或 ⌘C 复制。": "Connection code selected. Press Ctrl+C or ⌘C to copy it.",
+  "剪贴板是空的，请先复制队友的连接码。": "Your clipboard is empty. Copy your partner’s code first.",
+  "可以按 Ctrl+V 或 ⌘V 粘贴连接码。": "Press Ctrl+V or ⌘V to paste the connection code.",
+  "连接暂时断开，请稍后再拉笼门。": "Connection lost. Wait a moment before trying the cage door again.",
+  "当前浏览器无法启动 3D 渲染。请试试用桌面浏览器打开。": "3D rendering couldn’t start. Try opening the game in a desktop browser.",
+  "房间已满，请稍后再试。": "The relay is full. Try again in a moment.",
+  "房间已关闭或过期，请让队友创建新房间。": "This room closed or expired. Ask your partner to create a new one.",
+  "这个房间已经有两位玩家。": "This room already has two players.",
+  "无法确认房间身份。": "Couldn’t verify your room session.",
+  "房间消息无效，请重新加入。": "The relay received an invalid message. Rejoin the room.",
+  "房间消息顺序不一致，请重新加入。": "The room is out of sync. Rejoin the room.",
+  "队友网络长时间无响应，请重新加入。": "Your partner’s connection timed out. Rejoin the room.",
+  "找不到这个页面。": "Page not found.",
+  "找不到这个房间入口。": "Room endpoint not found.",
+  "房间请求格式不对。": "The relay received an invalid room request."
+};
+let gameLanguage='zh';
+const languageStorageKey='mouse-after-dark-language';
+// Translate at the UI boundary so both languages use the same game and room messages.
+const staticUi=[];
+const liveUi=new Map();
+const signList=/^(?:[☾♧♦✦] (?:月亮|叶子|水滴|星星)|？)(?: → (?:[☾♧♦✦] (?:月亮|叶子|水滴|星星)|？))*$/;
+const englishSigns=text=>text.replace(/月亮|叶子|水滴|星星|？/g,sign=>englishUi[sign]||'?');
+const englishFormats=[
+  [/^(月亮|叶子|水滴|星星)奶酪$/,(_,sign)=>englishUi[sign]+' Cheese'],
+  [/^已找到 (\d+) 份食物$/,(_,n)=>'Food collected: '+n],
+  [/^试过的顺序　(.+)$/,(_,codes)=>'Orders tried: '+codes],
+  [/^找到「(.+)」，排在(.+)。$/,(_,sign,position)=>'Found '+englishUi[sign]+'. It goes '+englishUi[position]+'.'],
+  [/^捡到(.+)，获得数字 (\d)。$/,(_,food,digit)=>'Picked up '+englishUi[food]+' and found digit '+digit+'.'],
+  [/^还差 (\d+) 个数字$/,(_,n)=>n+' more '+(n==='1'?'digit':'digits')+' needed'],
+  [/^依次传图案　(.+)$/,(_,signs)=>'Send in order: '+englishSigns(signs)],
+  [signList,signs=>englishSigns(signs)],
+  [/^等 (\d+\.\d) 秒再发下一串。$/,(_,seconds)=>'Wait '+seconds+' s before squeaking again.'],
+  [/^传出了「(.+)」。留意猫的脚步。$/,(_,sign)=>'Sent '+englishUi[sign]+'. Listen for the cat.'],
+  [/^重听第 (\d+) 个图案，(.+)$/,(_,n,sign)=>'Replay symbol '+n+': '+englishUi[sign]],
+  [/^照吱声暗号依次扳(\d+)个扣件。$/,(_,n)=>'Use the squeaks to pull '+n+' more '+(n==='1'?'latch':'latches')+' in order.'],
+  [/^第 (\d+) 关 · 笼内$/,(_,n)=>'Level '+n+' · Inside'],
+  [/^机关 (\d+) \/ (\d+)$/,(_,n,total)=>'Power '+n+' / '+total],
+  [/^队友找到 (\d+) \/ (\d+) 块$/,(_,n,total)=>'Cheese found '+n+' / '+total],
+  [/^正在加入 (.+) …$/,(_,code)=>'Joining '+code+'…'],
+  [/^扳动(.+)扣件$/,(_,sign)=>'Pull the '+englishUi[sign]+' latch']
+];
+
+function ui(source) {
+  if(gameLanguage!=='en' || !/[\u3400-\u9fff？]/.test(source)) return source;
+  const key=source.trim();
+  let translated=englishUi[key];
+  if(translated===undefined){
+    for(const [pattern,format] of englishFormats){
+      const match=key.match(pattern);
+      if(match){translated=format(...match);break;}
+    }
+  }
+  return translated===undefined?source:source.replace(key,()=>translated);
+}
+function registerUi(node,source,attribute) {
+  const update=()=>{
+    if(attribute) node.setAttribute(attribute,ui(source));
+    else node.nodeValue=ui(source);
+  };
+  staticUi.push(update);
+  update();
+}
+function applyLanguage(language) {
+  gameLanguage=language;
+  document.documentElement.lang=language==='en'?'en':'zh-CN';
+  document.title=ui('墙缝夜行 · Mouse After Dark');
+  staticUi.forEach(update=>update());
+  for(const [id,source] of liveUi){
+    const node=$(id), translated=ui(source);
+    if(node.textContent!==translated) node.textContent=translated;
+  }
+  for(const button of document.querySelectorAll('[data-language]')){
+    button.setAttribute('aria-pressed',String(button.dataset.language===language));
+  }
+  if(!$('lanInviteValue').hidden&&cageRoom?.transport==='lan'&&cageRoom.lanKey){
+    $('lanInviteValue').value=roomInviteUrl(cageRoom);
+  }
+}
+function initLanguage() {
+  const requested=new URL(location.href).searchParams.get('lang');
+  let saved;
+  try{saved=localStorage.getItem(languageStorageKey);}catch{}
+  const language=requested==='en'||requested==='zh'?requested:saved==='en'?'en':'zh';
+  const walker=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT);
+  for(let node=walker.nextNode();node;node=walker.nextNode()){
+    if(node.parentElement.tagName!=='SCRIPT'&&/[\u3400-\u9fff]/.test(node.nodeValue)&&!node.parentElement.closest('[data-language]')){
+      registerUi(node,node.nodeValue);
+    }
+  }
+  for(const attribute of ['aria-label','title','placeholder']){
+    for(const node of document.querySelectorAll('['+attribute+']')){
+      const source=node.getAttribute(attribute);
+      if(/[\u3400-\u9fff]/.test(source)) registerUi(node,source,attribute);
+    }
+  }
+  for(const button of document.querySelectorAll('[data-language]')){
+    button.addEventListener('click',()=>{
+      const chosen=button.dataset.language;
+      try{localStorage.setItem(languageStorageKey,chosen);}catch{}
+      const url=new URL(location.href);
+      if(url.searchParams.has('lang')){
+        url.searchParams.set('lang',chosen);
+        try{history.replaceState(history.state,'',url.href);}catch{}
+      }
+      applyLanguage(chosen);
+    });
+  }
+  applyLanguage(language);
+}
+
+const canvas = $('world');
+const effects = $('effects');
+const paint = effects.getContext('2d');
+let gl = canvas.getContext('webgl', {alpha:false, antialias:true});
+const TAU = Math.PI * 2;
+const clamp = (value, low, high) => Math.max(low, Math.min(high, value));
+const mix = (a,b,t) => a + (b-a)*t;
+const angleTo = (x,z) => Math.atan2(x,z);
+const angleDiff = (a,b) => Math.atan2(Math.sin(b-a),Math.cos(b-a));
+const distance = (a,b) => Math.hypot(a.x-b.x,a.z-b.z);
+const point = (x,z) => ({x,z});
+function rgb(hex) {
+  const value = parseInt(hex,16);
+  return [value>>16,(value>>8)&255,value&255].map(channel=>channel/255);
+}
+const levels = [
+  {
+    title:'灯熄后的厨房', intro:'收集食物上的数字，打开墙洞的锁。', width:20, depth:22,
+    spawn:[0,1.22,.04], home:[0,21.60], light:[-4,4.8,14], fog:'263d40',
+    food:[[-6.87,12.35,'面包屑','eeb269'],[6.45,16.35,'奶酪','ffa74b'],[4.12,7.42,'饼干屑','d19765']],
+    patrol:[[4.9,5.6],[5.25,11.9],[4.5,18.5],[-4.8,18.5],[-5.35,10.8],[-4.8,3.17]],
+    scene:'kitchen'
+  },
+  {
+    title:'储藏室的窄路', intro:'找到坚果上的数字。推车下有条近路。', width:16, depth:23,
+    spawn:[-2.8,1.3,.10], home:[4.3,22.55], light:[3.5,4.7,15.8], fog:'343e42',
+    food:[[-5.68,7.0,'榛果','e4a464'],[5.75,17.6,'核桃','ecc98b'],[.82,14.5,'松子','e6c9a0']],
+    patrol:[[4.6,9.2],[4.65,12.6],[4.3,20.1],[-2.5,20.0],[-4.7,16.2],[-4.75,10.35],[-3.75,4.8],[4.7,4.95]],
+    scene:'pantry'
+  }
+];
+let levelIndex=0, world, player, cat;
+let mode='menu', time=0, sniffUntil=0, readyAt=0, toastUntil=0, alertPulse=0;
+let view, meshes, shader, catShapes=[], viewportWidth=0, viewportHeight=0;
+let audioEnabled=true, audioContext, audioOutput, footstep=0;
+const pressed = new Set();
+let drag=null;
+
+function shaderSource(type,source) {
+  const handle=gl.createShader(type);
+  gl.shaderSource(handle,source);
+  gl.compileShader(handle);
+  if (!gl.getShaderParameter(handle,gl.COMPILE_STATUS)) throw Error(gl.getShaderInfoLog(handle));
+  return handle;
+}
+function initGL() {
+  const vertex=shaderSource(gl.VERTEX_SHADER,`
+    attribute vec3 aPosition;
+    attribute vec3 aNormal;
+    uniform mat4 uModel;
+    uniform mat4 uView;
+    uniform vec3 uScale;
+    varying vec3 vPosition;
+    varying vec3 vNormal;
+    varying vec3 vLocal;
+    void main(){
+      vec4 p=uModel*vec4(aPosition,1.0);
+      vPosition=p.xyz;
+      vNormal=normalize(mat3(uModel)*(aNormal/(uScale*uScale)));
+      vLocal=aPosition;
+      gl_Position=uView*p;
+    }`);
+  const fragment=shaderSource(gl.FRAGMENT_SHADER,`
+    precision mediump float;
+    uniform vec3 uColor;
+    uniform vec3 uEye;
+    uniform vec3 uLamp;
+    uniform vec3 uFog;
+    uniform vec3 uCat;
+    uniform vec2 uRoom;
+    uniform float uEmissive;
+    uniform float uMaterial;
+    varying vec3 vPosition;
+    varying vec3 vNormal;
+    varying vec3 vLocal;
+    float hash(vec3 p){
+      p=fract(p*0.3183099+vec3(0.11,0.21,0.31));
+      p*=19.0;
+      return fract(p.x*p.y*p.z*(p.x+p.y+p.z));
+    }
+    float noise(vec3 p){
+      vec3 i=floor(p),f=fract(p);
+      f=f*f*(3.0-2.0*f);
+      return mix(mix(mix(hash(i),hash(i+vec3(1,0,0)),f.x),
+                     mix(hash(i+vec3(0,1,0)),hash(i+vec3(1,1,0)),f.x),f.y),
+                 mix(mix(hash(i+vec3(0,0,1)),hash(i+vec3(1,0,1)),f.x),
+                     mix(hash(i+vec3(0,1,1)),hash(i+vec3(1,1,1)),f.x),f.y),f.z);
+    }
+    void main(){
+      vec3 delta=uLamp-vPosition;
+      vec3 normal=normalize(vNormal);
+      float key=max(dot(normal,normalize(delta)),0.0);
+      float cool=max(dot(normal,normalize(vec3(-0.48,0.65,-0.35))),0.0);
+      float wash=1.0/(1.0+dot(delta,delta)*0.033);
+      vec3 light=vec3(0.48,0.55,0.60)+cool*vec3(0.23,0.33,0.39)+wash*(0.16+key)*vec3(1.35,0.88,0.48);
+      vec3 p=vPosition;
+      float texture=0.96+0.12*noise(p*7.0)+0.08*(hash(floor(p*123.0))-0.5);
+      if (uMaterial>0.5 && uMaterial<1.5) {
+        vec2 tile=p.xz/1.28+vec2(0.5);
+        vec2 edge=min(fract(tile),1.0-fract(tile));
+        float joints=smoothstep(0.009,0.031,min(edge.x,edge.y));
+        texture*=mix(0.42,0.86+0.27*hash(vec3(floor(tile),1.0)),joints);
+        texture*=0.93+0.2*noise(p*2.3);
+      } else if (uMaterial>=1.5 && uMaterial<2.5) {
+        texture*=0.88+0.23*noise(vec3(p.x*2.0,p.y*29.0,p.z*12.0));
+      } else if (uMaterial>=2.5 && uMaterial<3.5) {
+        float threads=sin(p.x*82.0)*sin(p.z*79.0);
+        float stripe=smoothstep(0.38,0.65,abs(sin(p.x*11.0)));
+        texture*=0.79+0.09*threads+0.20*stripe;
+      }
+      if (normal.y>0.6 && p.y<0.12) {
+        vec2 border=vec2(uRoom.x-abs(p.x),min(p.z,uRoom.y-p.z));
+        texture*=mix(0.48,1.0,smoothstep(0.0,1.2,min(border.x,border.y)));
+        if(uCat.z>0.0){float s=length((p.xz-uCat.xy)*vec2(1.15,0.8)); texture*=mix(0.47,1.0,smoothstep(0.1,1.05,s));}
+      }
+      vec3 base=mix(light*uColor*texture,uColor,uEmissive);
+      float depth=distance(vPosition,uEye);
+      float haze=clamp(1.0-exp(-depth*depth*0.00155),0.0,0.66);
+      gl_FragColor=vec4(mix(base,uFog,haze*(1.0-0.45*uEmissive)),1.0);
+    }`);
+  const program=gl.createProgram();
+  gl.attachShader(program,vertex);
+  gl.attachShader(program,fragment);
+  gl.linkProgram(program);
+  if (!gl.getProgramParameter(program,gl.LINK_STATUS)) throw Error(gl.getProgramInfoLog(program));
+  gl.useProgram(program);
+  const uniforms={};
+  for (const name of ['Model','View','Scale','Color','Eye','Lamp','Fog','Room','Cat','Emissive','Material']) {
+    uniforms[name]=gl.getUniformLocation(program,'u'+name);
+  }
+  shader={...uniforms,position:gl.getAttribLocation(program,'aPosition'),normal:gl.getAttribLocation(program,'aNormal')};
+  gl.enable(gl.DEPTH_TEST);
+  gl.enableVertexAttribArray(shader.position);
+  gl.enableVertexAttribArray(shader.normal);
+  meshes={box:upload(boxVertices()), sphere:upload(roundVertices(12,7)), tube:upload(tubeVertices(14,1)), cone:upload(tubeVertices(12,0)), drum:upload(tubeVertices(12,.79))};
+}
+function vertexData(target,position,normal) {
+  target.push(...position,...normal);
+}
+function boxVertices() {
+  const vertices=[];
+  const faces=[
+    [[0,0,1],[[-.5,-.5,.5],[.5,-.5,.5],[.5,.5,.5],[-.5,.5,.5]]],
+    [[0,0,-1],[[.5,-.5,-.5],[-.5,-.5,-.5],[-.5,.5,-.5],[.5,.5,-.5]]],
+    [[1,0,0],[[.5,-.5,.5],[.5,-.5,-.5],[.5,.5,-.5],[.5,.5,.5]]],
+    [[-1,0,0],[[-.5,-.5,-.5],[-.5,-.5,.5],[-.5,.5,.5],[-.5,.5,-.5]]],
+    [[0,1,0],[[-.5,.5,.5],[.5,.5,.5],[.5,.5,-.5],[-.5,.5,-.5]]],
+    [[0,-1,0],[[-.5,-.5,-.5],[.5,-.5,-.5],[.5,-.5,.5],[-.5,-.5,.5]]]
+  ];
+  for (const [normal,points] of faces) for (const i of [0,1,2,0,2,3]) vertexData(vertices,points[i],normal);
+  return vertices;
+}
+function roundVertices(sides,rings) {
+  const vertices=[];
+  const spherePoint = (i,j) => {
+    const phi=i/sides*TAU, theta=j/rings*Math.PI;
+    return [Math.cos(phi)*Math.sin(theta),Math.cos(theta),Math.sin(phi)*Math.sin(theta)];
+  };
+  for (let j=0;j<rings;j++) for (let i=0;i<sides;i++) {
+    for (const [x,y] of [[i,j],[i+1,j],[i+1,j+1],[i,j],[i+1,j+1],[i,j+1]]) {
+      const normal=spherePoint(x,y);
+      vertexData(vertices,normal.map(value=>value*.5),normal);
+    }
+  }
+  return vertices;
+}
+function tubeVertices(sides,top) {
+  const vertices=[];
+  const rim=(angle,height,radius)=>[Math.cos(angle)*radius,height,Math.sin(angle)*radius];
+  for(let i=0;i<sides;i++){
+    const a=i/sides*TAU, b=(i+1)/sides*TAU;
+    const n=Math.atan(.5*(1-top));
+    for(const [angle,y,r] of [[a,-.5,.5],[b,-.5,.5],[b,.5,.5*top],[a,-.5,.5],[b,.5,.5*top],[a,.5,.5*top]]) {
+      vertexData(vertices,rim(angle,y,r),[Math.cos(angle)*Math.cos(n),Math.sin(n),Math.sin(angle)*Math.cos(n)]);
+    }
+    for(const y of [-.5,.5]) {
+      const normal=[0,Math.sign(y),0], radius=y<0?.5:.5*top;
+      for(const position of [[0,y,0],rim(a,y,radius),rim(b,y,radius)]) vertexData(vertices,position,normal);
+    }
+  }
+  return vertices;
+}
+function upload(vertices) {
+  const buffer=gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER,buffer);
+  gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(vertices),gl.STATIC_DRAW);
+  return {buffer,count:vertices.length/6};
+}
+function model(x,y,z,scale,yaw=0,pitch=0,roll=0) {
+  const c=Math.cos(yaw),s=Math.sin(yaw),u=Math.cos(pitch),v=Math.sin(pitch),a=Math.cos(roll),b=Math.sin(roll);
+  const [w,h,d]=scale;
+  return new Float32Array([
+    (c*a+s*v*b)*w,u*b*w,(-s*a+c*v*b)*w,0,
+    (-c*b+s*v*a)*h,u*a*h,(s*b+c*v*a)*h,0,
+    s*u*d,-v*d,c*u*d,0,x,y,z,1
+  ]);
+}
+function element(type,color,x,y,z,w,h,d,options={}) {
+  const {yaw=0,pitch=0,roll=0,material=0,glow=0}=options;
+  const scale=[w,h,d];
+  return {type,color:rgb(color),scale,matrix:model(x,y,z,scale,yaw,pitch,roll),material,glow};
+}
+function place(type,color,x,y,z,w,h,d,options) {
+  world.shapes.push(element(type,color,x,y,z,w,h,d,options));
+}
+function box(color,x,y,z,w,h,d,options) {place('box',color,x,y,z,w,h,d,options);}
+function solid(color,x,y,z,w,h,d,options={}) {
+  box(color,x,y,z,w,h,d,options);
+  obstacle(x,y,z,w,h,d,options.cover);
+}
+function obstacle(x,y,z,w,h,d,cover=false) {
+  const bounds={x,z,x0:x-w/2,x1:x+w/2,z0:z-d/2,z1:z+d/2,min:y-h/2,max:y+h/2,cover};
+  world.obstacles.push(bounds);
+  return bounds;
+}
+function chair(x,z,color='a57050') {
+  for(const dx of [-.63,.63]) for(const dz of [-.61,.61]) solid(color,x+dx,.79,z+dz,.16,1.58,.17,{material:2});
+  solid(color,x,1.62,z,1.55,.16,1.5,{material:2});
+  for(const dx of [-.64,.64]) box(color,x+dx,2.25,z+.62,.15,1.26,.16,{material:2});
+  for(const y of [2.27,2.73]) box(color,x,y,z+.62,1.27,.22,.13,{material:2});
+  box('6d4a35',x,.58,z+.63,1.2,.12,.12,{material:2});
+}
+function jar(x,y,z,color,scale=1) {
+  place('tube',color,x,y+.26*scale,z,.38*scale,.50*scale,.38*scale);
+  place('tube','b1a48b',x,y+.53*scale,z,.39*scale,.07*scale,.39*scale);
+  place('tube','cdb99a',x,y+.25*scale,z,.384*scale,.18*scale,.384*scale);
+}
+function tin(x,y,z,color,radius=.38,height=.51) {
+  place('tube',color,x,y+height/2,z,radius,height,radius);
+  for(const offset of [.025,height-.025]) place('tube','9da4a1',x,y+offset,z,radius+.012,.04,radius+.012);
+}
+function carton(x,y,z,color,scale=1) {
+  box(color,x,y+.47*scale,z,.72*scale,.94*scale,.53*scale,{material:2});
+  box('d5c5a7',x,y+.48*scale,z-.269*scale,.49*scale,.31*scale,.012);
+  box('7d6959',x,y+.48*scale,z-.277*scale,.35*scale,.035*scale,.01);
+  box('7d6959',x,y+.42*scale,z-.277*scale,.25*scale,.023*scale,.01);
+}
+function makeWindow(x,z,w,h,y) {
+  box('202d33',x,y,z,w+.44,h+.47,.25);
+  box('315569',x,y,z-.146,w,h,.025,{glow:.35});
+  place('sphere','fff0c7',x+w*.27,y+h*.27,z-.164,.34,.34,.016,{glow:1});
+  for (const [dx,dy] of [[-.4,.25],[.04,.32],[-.15,.42],[.37,.04],[-.26,-.1],[.29,.41]]) {
+    box('c3dddf',x+dx*w,y+dy*h,z-.164,.027,.027,.016,{glow:.8});
+  }
+  for (let i=0;i<10;i++) {
+    const dx=-w*.45+i*w*.095, ht=.14+.26*Math.abs(Math.sin(i*16.1));
+    box('273c46',x+dx,y-h*.5+ht/2,z-.169,w*.1,ht,.016,{glow:.12});
+  }
+  for(const dx of [-.5,0,.5]) box('c0a88c',x+w*dx,y,z-.19,.11,h+.14,.075,{material:2});
+  for(const dy of [-.5,0,.5]) box('c0a88c',x,y+h*dy,z-.19,w+.11,.1,.075,{material:2});
+  box('a4876f',x,y-h*.56,z-.24,w+.4,.12,.32,{material:2});
+}
+function pipe(x,z,y,height,color='a28362') {
+  place('tube',color,x,y,z,.13,height,.13);
+  for(const shift of [-.4,.17,.38]) place('tube','4f5250',x,y+height*shift,z,.17,.10,.17);
+}
+function den(x,z) {
+  const front=z-.09;
+  // Stepped lintel pieces leave a real opening at the bobbing camera's height.
+  for (const direction of [-1,1]) {
+    box('9a805d',x+direction*.43,.23,front,.18,.46,.28,{material:2});
+    box('b49b70',x+direction*.31,.46,front,.20,.17,.28,{material:2});
+    box('3e3b31',x+direction*.38,.20,z-.22,.055,.41,.22);
+  }
+  box('b69a73',x,.555,front,.52,.14,.28,{material:2});
+  box('343d38',x+.49,.38,z-.24,.20,.24,.09);
+  box('6d6a56',x+.49,.38,z-.292,.146,.177,.029);
+  for(const dx of [-.038,0,.038]) box('343d38',x+.49+dx,.347,z-.311,.025,.035,.014);
+  world.lock.barrier=obstacle(x,.25,z-.17,.68,.50,.11);
+  box('29281c',x,.25,z+.34,1.0,.51,.06);
+  box('ad9163',x,.028,z-.08,1.02,.044,.64,{material:2});
+  for (let i=0;i<6;i++) {
+    place('sphere','b9a77d',x+Math.sin(i*2.0)*.43,.037,z-.42-i*.13,.055,.048,.09);
+  }
+}
+function cabinetRow(side,start,end,color) {
+  const x=side*(world.level.width/2-.97), length=end-start, middle=(start+end)/2;
+  solid(color,x,1.18,middle,1.95,1.84,length,{cover:true});
+  box('b99872',x,2.21,middle,2.08,.19,length+.13,{material:2});
+  box('524f3e',x,2.10,middle,2.05,.10,length+.13);
+  for(let z=start+.54;z<end;z+=1.06){
+    const inner=x-side*.982;
+    box('2d3a32',inner,1.30,z,.065,1.51,.98);
+    box(color,inner-side*.043,1.31,z,.07,1.38,.86,{material:2});
+    box('a48e69',inner-side*.10,1.75,z,.075,.065,.32);
+    box('493f33',x,.13,z-.35,1.72,.25,.10);
+  }
+}
+function crate(x,z,w=1.45,d=1.05,h=.9,color='99734b') {
+  solid(color,x,h/2,z,w,h,d,{material:2});
+  for(const xx of [-1,1]) box('60462f',x+xx*w*.4,h/2,z-d/2-.019,w*.099,h,.052,{material:2});
+  for(let i=1;i<4;i++){
+    box('604e37',x,i*h/4,z-d/2-.008,w,.017,.04);
+    box('675039',x-w/2-.01,i*h/4,z,.021,.018,d);
+    box('675039',x+w/2+.01,i*h/4,z,.021,.018,d);
+  }
+}
+function narrowPass(x,z,w,d,color) {
+  solid(color,x,.48,z,w,.49,d,{cover:true,material:2});
+  for(const xx of [-1,1]) solid('584b33',x+xx*(w/2-.09),.13,z,.18,.26,d,{material:2});
+  box('ad9967',x,.73,z,w+.13,.035,d+.09,{material:2});
+}
+function kitchen() {
+  const green='617267';
+  cabinetRow(-1,4.2,17.2,green);
+  cabinetRow(1,5.9,13.1,'657970');
+  // Island supports and low apron are separate so the floor underneath is traversable.
+  solid('55685a',.5,1.33,11.55,4.48,2.18,4.34,{cover:true,material:2});
+  box('40382d',.5,2.43,11.55,4.81,.16,4.67);
+  box('ba9370',.5,2.57,11.55,4.87,.14,4.74,{material:2});
+  for(const dx of [-1.99,1.99]) for(const dz of [-1.88,1.88]) solid('534d38',.5+dx,.15,11.55+dz,.22,.30,.21);
+  for(const dx of [-1.47,0,1.47]) {
+    box('768575',.5+dx,1.49,9.34,1.27,1.48,.1,{material:2});
+    box('b4a27e',.5+dx,1.93,9.25,.31,.08,.14);
+  }
+  for (const z of [10.13,11.55,12.99]) {
+    box('788779',2.78,1.45,z,.103,1.47,1.27,{material:2});
+    box('948468',2.88,1.97,z,.12,.073,.34);
+  }
+  box('6b4c36',.8,2.66,11.3,1.39,.058,.83,{material:2});
+  jar(-1,2.66,12.25,'8e5a41',1.42);
+  jar(-.46,2.66,12.64,'6d8571',1.15);
+  place('drum','cdb78a',1.6,2.76,12.38,.84,.21,.84);
+  for(let i=0;i<4;i++) place('sphere',i===1?'987b44':'a96a49',1.38+.14*i,2.95+(i%2)*.065,12.3+.14*(i%2),.27,.27,.27);
+  solid('6a7170',8.85,1.02,14.38,2.15,2.04,2.26);
+  box('384345',7.754,1.08,14.38,.043,1.04,1.83);
+  box('b67a49',7.725,1.02,14.38,.02,.68,1.45,{glow:.22});
+  box('222e2c',7.709,1.05,14.38,.021,.50,1.27);
+  box('aeb0a1',7.658,1.73,14.36,.12,.08,1.63);
+  box('2e3a39',8.85,2.06,14.38,2.16,.1,2.27);
+  for(const z of [13.89,14.89]) for(const x of [8.29,9.39]) place('tube','7b7f73',x,2.14,z,.61,.045,.61);
+  chair(-4.75,8.5);
+  chair(4.58,15.18,'8d6447');
+  chair(5.8,4.35,'855f47');
+  crate(-7.38,4.1,1.86,1.27,1.05);
+  narrowPass(-3.95,4.82,1.61,1.6,'866a47');
+  box('92654b',-.20,.033,4.85,3.51,.052,2.3,{material:3});
+  box('ad8658',-.20,.043,3.69,3.51,.06,.09,{material:3});
+  box('ad8658',-.20,.043,6.01,3.51,.06,.09,{material:3});
+  box('7e9382',.6,.044,17.42,4.66,.055,2.37,{material:3});
+  solid('4b5855',-7.9,1.86,20.48,2.68,3.72,2.34);
+  box('aab5ad',-7.9,2.34,19.28,2.54,.043,.12);
+  box('ad9d83',-6.94,1.41,19.15,.10,.94,.14);
+  box('ad9d83',-6.94,2.92,19.15,.10,.57,.14);
+  makeWindow(-3.55,21.87,3.68,2.43,2.96);
+  box('5e5140',5.40,2.55,21.73,3.76,.12,.38,{material:2});
+  for(let i=0;i<5;i++) jar(4.00+i*.59,2.61,21.63,['a47455','788477','8b4541','aa8b59','7a7e66'][i],.9+i%2*.16);
+  for (const x of [-6,-.2,5.4]) box('3d4e4c',x,4.58,11.0,.23,.28,22,{material:2});
+  pipe(-7.68,1.22,2.16,4.31);
+  pipe(-7.93,1.22,2.19,4.35);
+}
+function pantry() {
+  for(const side of [-1,1]) {
+    const x=side*6.75;
+    for(const z of [4.0,11.3,19.0]){
+      for(const dx of [-.87,.87]) for(const dz of [-2.12,2.12]) solid('685647',x+dx,1.79,z+dz,.13,3.56,.14,{material:2});
+      for(const y of [.78,1.66,2.55,3.47]) solid('997a5c',x,y,z,1.94,.13,4.51,{material:2,cover:y<1});
+      for(let i=0;i<6;i++){
+        const xx=x+Math.cos(i*2.27)*.45, zz=z-1.67+i*.66;
+        if(i%3===0) carton(xx,1.73,zz,'ad7f56',.82);
+        else jar(xx,1.73,zz,i%2?'99654f':'779389',1+i%2*.20);
+        if(i<5) tin(x+Math.sin(i*3.0)*.40,2.62,zz,i%2?'807f57':'a66552',.52,.57);
+        if(i%2===0) carton(xx,3.54,zz,'8b745f',.94);
+      }
+      if(z!==19.0) crate(x,z+.35,1.6,1.27,.48,'927852');
+    }
+  }
+  narrowPass(-.55,11.55,5.7,2.35,'816647');
+  for(const xx of [-2.96,1.8]) for(const zz of [10.63,12.48]) {
+    place('tube','3e4440',xx,.147,zz,.29,.36,.36,{roll:1.57});
+  }
+  for(const xx of [-1.8,.28]) {
+    box('9c7e59',xx,1.08,11.72,1.74,.69,1.64,{material:2});
+    box('5b503c',xx,1.44,11.72,1.82,.07,1.72,{material:2});
+    box('c2a777',xx,.99,10.88,.44,.22,.026);
+  }
+  for(const x of [-2.8,1.73]) for(const z of [10.50,12.59]) box('5b5040',x,.83,z,.105,1.20,.112);
+  crate(-2.8,16.7,2.2,1.78,1.08);
+  crate(-2.83,16.79,1.69,1.48,.65,'a58b61');
+  box('9c8464',-2.83,1.41,16.79,1.69,.65,1.48,{material:2});
+  crate(.4,19.35,2.32,1.34,.99);
+  narrowPass(3.12,5.5,1.8,2.25,'8c7554');
+  crate(-.12,3.0,1.55,1.23,.89);
+  box('6d8478',1.09,.031,15.8,3.85,.052,2.25,{material:3});
+  box('926d52',-3.1,.035,7.1,3.22,.058,1.9,{material:3});
+  makeWindow(-2.1,22.86,2.9,1.72,3.17);
+  for(const z of [2.13,8.45,14.82,21.32]) box('514e43',0,4.49,z,16,.27,.23,{material:2});
+  pipe(7.02,1.0,2.2,4.38);
+}
+let software=null;
+function initSoftware() {
+  const surface=$('software');
+  const context=surface.getContext('2d',{alpha:false});
+  if(!context) throw Error('Canvas unavailable');
+  surface.hidden=false;
+  software={
+    surface,context,geometry:{box:boxVertices(),sphere:roundVertices(8,5),tube:tubeVertices(9,1),cone:tubeVertices(8,0),drum:tubeVertices(8,.79)},
+    objects:new WeakMap(),width:0,height:0,frame:null,pixels:null,depth:null
+  };
+}
+function resizeSoftware() {
+  const {surface,context}=software;
+  const scale=Math.min(1,650/viewportWidth,430/viewportHeight);
+  const w=Math.max(1,Math.round(viewportWidth*scale)), h=Math.max(1,Math.round(viewportHeight*scale));
+  surface.width=w;surface.height=h;
+  software.width=w;software.height=h;
+  software.frame=context.createImageData(w,h);
+  software.pixels=new Uint32Array(software.frame.data.buffer);
+  software.depth=new Float32Array(w*h);
+}
+function color32(r,g,b) {
+  return (255<<24)|(b<<16)|(g<<8)|r;
+}
+function softwareGeometry(item) {
+  const cached=software.objects.get(item);
+  if(cached) return cached;
+  const tris=[], data=software.geometry[item.type], m=item.matrix, [w,h,d]=item.scale;
+  for(let i=0;i<data.length;i+=18) {
+    const vertices=[];
+    const n=[0,0,0];
+    const center=[0,0,0];
+    for(let j=i;j<i+18;j+=6) {
+      const x=data[j], y=data[j+1], z=data[j+2];
+      const p=[x*m[0]+y*m[4]+z*m[8]+m[12],x*m[1]+y*m[5]+z*m[9]+m[13],x*m[2]+y*m[6]+z*m[10]+m[14]];
+      vertices.push(p);
+      for(let axis=0;axis<3;axis++){
+        n[axis]+=m[axis]*data[j+3]/(w*w)+m[axis+4]*data[j+4]/(h*h)+m[axis+8]*data[j+5]/(d*d);
+        center[axis]+=p[axis]/3;
+      }
+    }
+    if(item.type==='box') {
+      const face=Math.floor(i/36);
+      const [axis,direction]=[[2,1],[2,-1],[0,1],[0,-1],[1,1],[1,-1]][face];
+      for(let coordinate=0;coordinate<3;coordinate++) {
+        center[coordinate]=m[12+coordinate]+direction*m[axis*4+coordinate]*.5;
+      }
+    }
+    const length=Math.hypot(...n)||1;
+    tris.push({vertices,normal:n.map(value=>value/length),center});
+  }
+  software.objects.set(item,tris);
+  return tris;
+}
+function softwareStart(level,actor,fog) {
+  software.pixels.fill(color32(...fog.map(channel=>Math.round(channel*255))));
+  software.depth.fill(0);
+  software.fog=fog;
+  software.level=level;
+  software.actor=actor;
+}
+function clipNear(vertices) {
+  const clipped=[];
+  const near=.039;
+  for(let i=0;i<vertices.length;i++){
+    const a=vertices[i], b=vertices[(i+1)%vertices.length];
+    if(a.z>=near) clipped.push(a);
+    if((a.z>=near)===(b.z>=near)) continue;
+    const t=(near-a.z)/(b.z-a.z);
+    clipped.push({x:mix(a.x,b.x,t),y:mix(a.y,b.y,t),z:near,wx:mix(a.wx,b.wx,t),wz:mix(a.wz,b.wz,t)});
+  }
+  return clipped;
+}
+function softwareDraw(item) {
+  const {width,height,fog,level}=software;
+  const {position,right,up,forward}=view;
+  const [ex,ey,ez]=position, [lx,ly,lz]=level.light;
+  const glow=item.glow||0;
+  const material=item.material||0;
+  for(const tri of softwareGeometry(item)){
+    const [cx,cy,cz]=tri.center, [nx,ny,nz]=tri.normal;
+    if((ex-cx)*nx+(ey-cy)*ny+(ez-cz)*nz<-.0001) continue;
+    const points=tri.vertices.map(([x,y,z])=>{
+      const dx=x-ex,dy=y-ey,dz=z-ez;
+      return {x:dx*right[0]+dz*right[2],y:dx*up[0]+dy*up[1]+dz*up[2],z:dx*forward[0]+dy*forward[1]+dz*forward[2],wx:x,wz:z};
+    });
+    if(points.every(p=>p.z<.039 || p.z>62)) continue;
+    const polygon=(points.some(p=>p.z<.039)?clipNear(points):points).map(p=>({
+      x:width*.5*(1+p.x*view.sx/p.z), y:height*.5*(1-p.y*view.sy/p.z),
+      q:1/p.z, xq:p.wx/p.z, zq:p.wz/p.z
+    }));
+    const dx=lx-cx,dy=ly-cy,dz=lz-cz;
+    const d2=dx*dx+dy*dy+dz*dz, key=Math.max(0,(dx*nx+dy*ny+dz*nz)/Math.sqrt(d2+.0001));
+    const ambient=Math.max(0,nx*-.48+ny*.65-nz*.35);
+    const warmth=(.16+key)/(1+d2*.033);
+    const light=[.48+ambient*.23+warmth*1.35,.55+ambient*.33+warmth*.88,.60+ambient*.39+warmth*.48];
+    const grit=material===2?.94+Math.sin(cx*2.1+cy*29.3+cz*12.7)*.065:1;
+    const dist=Math.hypot(ex-cx,ey-cy,ez-cz);
+    const haze=Math.min(.66,1-Math.exp(-dist*dist*.00155))*(1-.45*glow);
+    const base=item.color.map((channel,i)=>Math.round(clamp(mix(mix(channel*light[i]*grit,channel,glow),fog[i],haze),0,1)*255));
+    const texture=ny>.65&&(material===1||material===3)?material:0;
+    const fill=color32(...base);
+    for(let i=1;i<polygon.length-1;i++) softwareTriangle(polygon[0],polygon[i],polygon[i+1],fill,texture,item.color);
+  }
+}
+function softwareTriangle(a,b,c,fill,texture,base) {
+  const {width,height,depth,pixels,level,actor,fog}=software;
+  const minX=Math.max(0,Math.floor(Math.min(a.x,b.x,c.x)));
+  const minY=Math.max(0,Math.floor(Math.min(a.y,b.y,c.y)));
+  const maxX=Math.min(width-1,Math.ceil(Math.max(a.x,b.x,c.x)));
+  const maxY=Math.min(height-1,Math.ceil(Math.max(a.y,b.y,c.y)));
+  if(minX>maxX||minY>maxY) return;
+  const denominator=(b.y-c.y)*(a.x-c.x)+(c.x-b.x)*(a.y-c.y);
+  if(Math.abs(denominator)<.00001) return;
+  const ux=(b.y-c.y)/denominator, uy=(c.x-b.x)/denominator;
+  const vx=(c.y-a.y)/denominator, vy=(a.x-c.x)/denominator;
+  const au=a.q-c.q, bu=b.q-c.q;
+  const xu=a.xq-c.xq,xv=b.xq-c.xq,zu=a.zq-c.zq,zv=b.zq-c.zq;
+  const [r,g,blue]=base,[fr,fg,fb]=fog,[lx,ly,lz]=level.light;
+  const room=level.width/2;
+  for(let y=minY;y<=maxY;y++){
+    let u=ux*(minX+.5-c.x)+uy*(y+.5-c.y), v=vx*(minX+.5-c.x)+vy*(y+.5-c.y);
+    let index=y*width+minX;
+    for(let x=minX;x<=maxX;x++,index++,u+=ux,v+=vx){
+      if(u<0||v<0||u+v>1) continue;
+      const q=c.q+u*au+v*bu;
+      if(q<=depth[index]) continue;
+      depth[index]=q;
+      if(!texture) {
+        pixels[index]=fill;
+        continue;
+      }
+      const z=1/q, wx=(c.xq+u*xu+v*xv)*z, wz=(c.zq+u*zu+v*zv)*z;
+      const tx=wx/1.28+.5,tz=wz/1.28+.5, ix=Math.floor(tx),iz=Math.floor(tz);
+      const edge=Math.min(tx-ix,ix+1-tx,tz-iz,iz+1-tz);
+      const hash=((Math.imul(ix,124683)^Math.imul(iz,453311))>>>2)%41;
+      const grit=1+((((Math.floor(wx*128)*15731)^(Math.floor(wz*128)*789221))&15)-7)*.008;
+      let value=texture===1?(.42+clamp((edge-.009)*46,0,1)*(.45+hash*.006))*grit:.79+grit*.09+(Math.abs(Math.sin(wx*11))>.53?.12:0);
+      const sx=wx-actor.x,sz=wz-actor.z;
+      value*=.53+.47*clamp(sx*sx*1.22+sz*sz*.8,0,1);
+      value*=.67+.33*clamp(1.22*Math.min(room-Math.abs(wx),wz,level.depth-wz),0,1);
+      const dx=wx-lx,dz=wz-lz,d2=dx*dx+ly*ly+dz*dz;
+      const lamp=(.16+ly/Math.sqrt(d2))/(1+d2*.033);
+      const haze=Math.min(.64,z*z/(646+z*z));
+      pixels[index]=color32(
+        Math.min(255,Math.round(mix(value*r*(.63+lamp*1.35),fr,haze)*255)),
+        Math.min(255,Math.round(mix(value*g*(.76+lamp*.88),fg,haze)*255)),
+        Math.min(255,Math.round(mix(value*blue*(.85+lamp*.48),fb,haze)*255)));
+    }
+  }
+}
+
+function environment(level) {
+  const half=level.width/2, depth=level.depth, [hx,hz]=level.home;
+  box(level.scene==='kitchen'?'846750':'93806b',0,-.08,depth/2,level.width+.3,.16,depth+.3,{material:1});
+  box('637774',0,4.75,depth/2,level.width,.17,depth);
+  for(const side of [-1,1]) {
+    box('77827a',side*(half+.09),2.3,depth/2,.18,4.6,depth);
+    box('ac9174',side*(half-.05),.19,depth/2,.12,.38,depth,{material:2});
+    box('565b4f',side*(half-.05),.42,depth/2,.12,.07,depth);
+    for(let z=1.2;z<depth;z+=1.23){
+      box('858d82',side*(half-.012),1.29,z,.030,1.36,1.18);
+      box('66746e',side*(half-.032),2.01,z,.036,.042,1.2);
+    }
+  }
+  box('6c7c73',0,2.3,-.09,level.width,4.6,.18);
+  box('53655f',0,2.62,depth+.07,level.width,4.06,.14);
+  for(const [start,end] of [[-half,hx-.34],[hx+.34,half]]) {
+    box('53655f',(start+end)/2,.29,depth+.07,end-start,.60,.14);
+    box('ad9677',(start+end)/2,.12,depth-.064,end-start,.24,.12,{material:2});
+  }
+  box('43443b',hx,1.75,depth-.07,1.10,.048,.18);
+  den(hx,hz);
+  const [sx,,sz]=level.light;
+  box('3d3830',sx,4.49,sz,.13,.5,.14);
+  place('drum','88744b',sx,4.22,sz,.93,.37,.93);
+  place('tube','ffe3a2',sx,4.044,sz,.76,.05,.76,{glow:1});
+  place('sphere','fff6ce',sx,4.018,sz,.26,.16,.26,{glow:1});
+  for(let i=0;i<92;i++){
+    const x=Math.sin(i*45.17)*half*.96, z=.7+(Math.sin(i*34.29)+1)*.5*(depth-1.5);
+    const size=.022+Math.abs(Math.cos(i*1.28))*.075;
+    box(i%3===0?'a78d6b':'b9a37e',x,.008,z,size,.013,size*.56,{yaw:i*2.14});
+  }
+}
+function shuffle(items) {
+  const result=[...items];
+  for(let i=result.length-1;i>0;i--) {
+    const j=Math.floor(Math.random()*(i+1));
+    [result[i],result[j]]=[result[j],result[i]];
+  }
+  return result;
+}
+function createLevel(index) {
+  levelIndex=index;
+  const level=levels[index];
+  cageRound=coopHost()?newCageRound(index):null;
+  const digits=shuffle('0123456789').slice(0,level.food.length);
+  const food=cageRound?cageFood(level):level.food.map(([x,z,name,color],i)=>({x,z,name,color,digit:digits[i],found:false}));
+  const lock={answer:cageRound?'':shuffle(digits).join(''),failed:new Set(),openedAt:null};
+  world={level,shapes:[],obstacles:[],food,lock,home:point(...level.home)};
+  environment(level);
+  if(level.scene==='kitchen') kitchen(); else pantry();
+  const [x,z,yaw]=level.spawn;
+  player={x,z,y:0,yaw,pitch:.035,eye:.33,vY:0,stamina:1,stance:false,low:false,ground:true,gait:0,amount:0};
+  const [cx,cz]=level.patrol[0], [nx,nz]=level.patrol[1];
+  cat={x:cx,z:cz,yaw:angleTo(nx-cx,nz-cz),alert:0,goal:1,phase:'patrol',memory:0,last:null,trail:[],repath:0,gait:0,speed:0};
+  setupCat();
+  time=0;sniffUntil=0;readyAt=0;toastUntil=0;alertPulse=0;footstep=0;
+  $('chapter').textContent='CHAPTER 0'+(index+1);
+  setText('levelName',level.title);
+  $('sceneLabel').firstElementChild.textContent='CHAPTER 0'+(index+1);
+  setText('sceneName',level.title);
+  $('markers').replaceChildren(...[...world.food,world.home].map((item,i)=>{
+    const label=document.createElement('div');
+    label.className='marker'+(i===world.food.length?' home':'');
+    label.hidden=true;
+    item.marker=label;
+    return label;
+  }));
+  const dots=world.food.map(()=>Object.assign(document.createElement('i'),{className:'pip'}));
+  $('progress').replaceChildren(...dots,document.createElement('span'));
+  refreshGoal();
+  $('alert').classList.remove('danger');
+  setText('alertText','猫没发现你');
+  $('alertFill').style.transform='scaleX(0)';
+  $('prompt').hidden=true;
+  $('lockPrompt').hidden=true;
+  $('coopSignals').hidden=true;
+  $('toast').hidden=true;
+}
+function catPart(type,color,x,y,z,w,h,d,extra={}) {
+  catShapes.push({type,color:rgb(color),x,y,z,scale:[w,h,d],...extra});
+}
+function setupCat() {
+  catShapes=[];
+  const fur='696f76', dark='4a515e', stripe='454c56', white='9c9792';
+  catPart('sphere',fur,0,.77,-.02,.80,.88,1.57);
+  catPart('sphere',dark,0,.82,-.55,.77,.77,.84);
+  catPart('sphere',fur,0,.92,.44,.76,.91,.82);
+  catPart('sphere',white,0,.79,.68,.54,.53,.53);
+  catPart('sphere',fur,0,1.155,.77,.76,.68,.67);
+  for(const side of [-1,1]) {
+    catPart('cone',dark,side*.252,1.57,.72,.30,.48,.32,{roll:side*-.31});
+    catPart('cone','aa827e',side*.273,1.57,.855,.155,.29,.08,{roll:side*-.31});
+    catPart('sphere','352d28',side*.188,1.222,1.041,.206,.143,.073);
+    catPart('sphere','f3b955',side*.185,1.228,1.073,.130,.100,.038,{glow:.88});
+    catPart('sphere','2a2724',side*.185,1.228,1.095,.028,.084,.017,{glow:.40});
+    catPart('sphere',white,side*.109,1.055,1.065,.244,.204,.16);
+    for(let i=0;i<3;i++) catPart('box','b8a79a',side*.256,1.055+(i-1)*.035,1.11,.30,.009,.01,{roll:side*(i-1)*.16});
+    for(const z of [-.50,.45]) {
+      const gaitSign=side*Math.sign(z);
+      catPart('sphere',z>0?fur:dark,side*.247,.386,z,.243,.684,.25,{gaitSign});
+      catPart('sphere',white,side*.247,.135,z+.072,.23,.20,.33,{gaitSign});
+    }
+    for(const z of [-.37,.05,.37]) catPart('sphere',stripe,side*.325,.918,z,.19,.44,.12,{roll:side*.25});
+  }
+  catPart('sphere','bd8179',0,1.104,1.164,.139,.085,.062);
+  for(let i=0;i<9;i++) {
+    const f=i/8;
+    catPart('sphere',i%2?dark:fur,0,.65+f*f*.93,-.82-f*.93,.23-f*.08,.23-f*.08,.26,{tail:f});
+  }
+}
+function setView(x,y,z,yaw,pitch) {
+  const sin=Math.sin(yaw), cos=Math.cos(yaw), sp=Math.sin(pitch), cp=Math.cos(pitch);
+  const right=[cos,0,-sin], up=[-sin*sp,cp,-cos*sp], forward=[sin*cp,sp,cos*cp];
+  const position=[x,y,z], dot=(a,b)=>a[0]*b[0]+a[1]*b[1]+a[2]*b[2];
+  const sy=1/Math.tan(65*Math.PI/360), sx=sy*canvas.height/canvas.width;
+  const n=.037, f=63, a=(f+n)/(f-n), b=-2*f*n/(f-n);
+  const xo=-dot(position,right)*sx, yo=-dot(position,up)*sy, zo=-dot(position,forward);
+  const matrix=new Float32Array([
+    right[0]*sx,up[0]*sy,forward[0]*a,forward[0],
+    right[1]*sx,up[1]*sy,forward[1]*a,forward[1],
+    right[2]*sx,up[2]*sy,forward[2]*a,forward[2],
+    xo,yo,zo*a+b,zo
+  ]);
+  view={position,right,up,forward,matrix,sx,sy};
+}
+let activeMesh;
+function draw(item) {
+  if(software){softwareDraw(item);return;}
+  const mesh=meshes[item.type];
+  if(mesh!==activeMesh) {
+    gl.bindBuffer(gl.ARRAY_BUFFER,mesh.buffer);
+    gl.vertexAttribPointer(shader.position,3,gl.FLOAT,false,24,0);
+    gl.vertexAttribPointer(shader.normal,3,gl.FLOAT,false,24,12);
+    activeMesh=mesh;
+  }
+  gl.uniformMatrix4fv(shader.Model,false,item.matrix);
+  gl.uniform3fv(shader.Scale,item.scale);
+  gl.uniform3fv(shader.Color,item.color);
+  gl.uniform1f(shader.Material,item.material||0);
+  gl.uniform1f(shader.Emissive,item.glow||0);
+  gl.drawArrays(gl.TRIANGLES,0,mesh.count);
+}
+function drawCat(actor, animationTime) {
+  const cosine=Math.cos(actor.yaw), sine=Math.sin(actor.yaw);
+  const bob=Math.sin(actor.gait*2)*.025*Math.min(actor.speed,1);
+  const prowl=actor.phase==='hunt'?.12:0;
+  for(const part of catShapes) {
+    const stride=part.gaitSign ? Math.sin(actor.gait)*part.gaitSign*Math.min(actor.speed*.13,.25) : 0;
+    const tail=part.tail ? Math.sin(animationTime*2.6-part.tail*2)*part.tail*.36 : 0;
+    const x=part.x+tail, z=part.z+stride;
+    const y=part.y+bob-prowl*(part.y>.60?1:0);
+    const matrix=model(actor.x+x*cosine+z*sine,y,actor.z-x*sine+z*cosine,part.scale,actor.yaw,part.gaitSign ? stride*.85 : 0,part.roll||0);
+    draw({...part,matrix});
+  }
+}
+function drawFood(food) {
+  if(food.found) return;
+  const {x,z,name,color}=food;
+  if(name.endsWith('奶酪')) {
+    draw(element('drum',color,x,.115,z,.48,.23,.43,{roll:.11,glow:.21}));
+    for(const [dx,dz,r] of [[-.10,-.09,.10],[.08,.08,.09],[.11,-.115,.07]]) {
+      draw(element('sphere','a97239',x+dx,.224,z+dz,r,.018,r));
+    }
+  } else if(name==='面包屑'||name==='饼干屑') {
+    for(let i=0;i<5;i++){
+      const angle=i*2.513;
+      draw(element('drum',i===1?'ffc78b':color,x+Math.sin(angle)*.15,.09+i%2*.029,z+Math.cos(angle)*.14,.119+i%3*.052,.14+i%2*.06,.161,{yaw:angle,roll:Math.sin(i)*.19,glow:.21}));
+    }
+  } else {
+    draw(element('sphere',color,x,.142,z,.35,.28,.34,{yaw:.64,roll:.22,glow:.29,material:2}));
+    draw(element('sphere','9c734b',x,.185,z-.135,.25,.14,.10,{glow:.15}));
+  }
+  for(let i=0;i<3;i++) {
+    const t=time*.65+i*TAU/3;
+    const y=.34+i*.11+Math.sin(t*2)*.045;
+    draw(element('sphere','ffd992',x+Math.sin(t)*.19,y,z+Math.cos(t)*.19,.028,.028,.028,{glow:.91}));
+  }
+}
+function drawDenLock() {
+  const {x,z}=world.home;
+  const open=world.lock.openedAt!==null;
+  const rise=open ? .55*clamp((time-world.lock.openedAt)/.4,0,1) : 0;
+  for(let i=0;i<4;i++) {
+    draw(element('box',i%2?'67716a':'505d53',x,.073+i*.12+rise,z-.17,.668,.115,.065));
+  }
+  draw(element('box',open?'aee5aa':'ffac6b',x+.49,.42,z-.315,.078,.031,.015,{glow:.9}));
+}
+function render(dt, filmTime) {
+  const inCage=mode==='guest';
+  if(inCage){
+    const {x,z}=world.home;
+    setView(x,.32,z+.072,Math.PI+cageWindowYaw,-.035);
+  } else if(mode==='menu') {
+    const x=.55+Math.sin(filmTime*.33)*.16;
+    setView(x,.40,1.56,.085+Math.sin(filmTime*.25)*.035,.12);
+  } else {
+    const bob=Math.sin(player.gait*2)*Math.min(.025,player.amount*.005);
+    setView(player.x,player.y+player.eye+bob,player.z,player.yaw,player.pitch);
+  }
+  const {level}=world;
+  const fog=rgb(level.fog);
+  const actor=inCage&&cageWindowPose?
+    {x:cageWindowPose[7],z:cageWindowPose[8],yaw:cageWindowPose[9],gait:cageWindowPose[10],speed:cageWindowPose[11],phase:cageWindowPose[12]?'hunt':'patrol'}:
+    mode==='menu'?{x:3.3+Math.sin(filmTime*.63)*.5,z:5.6,yaw:-2.63,gait:filmTime*1.5,speed:.5,phase:'patrol'}:cat;
+  if(software) softwareStart(level,actor,fog);
+  else {
+    gl.clearColor(...fog,1);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);
+    gl.uniformMatrix4fv(shader.View,false,view.matrix);
+    gl.uniform3fv(shader.Eye,view.position);
+    gl.uniform3fv(shader.Lamp,level.light);
+    gl.uniform3fv(shader.Fog,fog);
+    gl.uniform2f(shader.Room,level.width/2,level.depth);
+    gl.uniform3f(shader.Cat,actor.x,actor.z,1);
+  }
+  for(const shape of world.shapes) draw(shape);
+  if(inCage){
+    drawCageGrate(world.home.x,world.home.z,cageGuest.open?.58:0);
+    if(cageWindowPose) drawCageGuestMouse(cageWindowPose,filmTime);
+  } else {
+    if(coopHost()) drawCageBars();
+    else drawDenLock();
+    for(const food of world.food) drawFood(food);
+  }
+  drawCat(actor,inCage||mode==='menu'?filmTime:time);
+  if(software) software.context.putImageData(software.frame,0,0);
+  if(!inCage) drawEffects(dt,filmTime);
+  if(mode==='play') updateMarkers();
+}
+function drawEffects(dt,filmTime) {
+  if(!paint) return;
+  const w=viewportWidth, h=viewportHeight;
+  paint.clearRect(0,0,w,h);
+  if(mode==='menu') return;
+  if(time<sniffUntil){
+    const start=sniffUntil-2.55, phase=clamp((time-start)/.85,0,1);
+    const faded=clamp((sniffUntil-time)*1.9,0,1);
+    const ring=paint.createRadialGradient(w*.50,h*.52,Math.min(w,h)*(.12+phase*.38),w*.50,h*.52,Math.hypot(w,h)*.54);
+    ring.addColorStop(0,'#eaa55600');
+    ring.addColorStop(1,'rgba(244,183,98,'+(.27*faded)+')');
+    paint.fillStyle=ring;paint.fillRect(0,0,w,h);
+  }
+  if(alertPulse>0 || cat.alert>.63) {
+    const amount=Math.max(alertPulse,(cat.alert-.63)*.65)*(0.85+Math.sin(filmTime*7.5)*.15);
+    const glare=paint.createRadialGradient(w*.5,h*.47,h*.23,w*.5,h*.50,Math.max(w,h)*.62);
+    glare.addColorStop(0,'#ed623a00');
+    glare.addColorStop(1,'rgba(205,65,37,'+(.60*amount)+')');
+    paint.fillStyle=glare;paint.fillRect(0,0,w,h);
+  }
+  const gesture=coopHost()&&time<cageRound.pawUntil;
+  if(mode==='play' && (gesture || player.amount>3.5 || player.low || !player.ground)) {
+    const size=Math.min(66,w*.075);
+    for(const side of [-1,1]) {
+      const step=Math.sin(player.gait+side*Math.PI/2);
+      if(gesture&&cageRound.pawCount===1&&side===-1) continue;
+      const y=gesture?h-size*.72:h+size*.28+(player.low?step*.22:step*.42)*size;
+      paint.save();paint.translate(w*.5+side*size*.94,y);paint.rotate(side*-.24);
+      paint.fillStyle='#766763';
+      paint.beginPath();paint.ellipse(0,-size*.1,size*.27,size*.42,0,0,TAU);paint.fill();
+      paint.fillStyle='#bc938c';
+      paint.beginPath();paint.ellipse(0,-size*.46,size*.25,size*.25,0,0,TAU);paint.fill();
+      for(let i=-1;i<=1;i++){
+        paint.beginPath();paint.ellipse(i*size*.13,-size*(.62-Math.abs(i)*.06),size*.063,size*.15,i*.17,0,TAU);paint.fill();
+      }
+      paint.restore();
+    }
+  }
+}
+function updateMarkers() {
+  const sniff=time<sniffUntil;
+  for(const item of [...world.food,world.home]){
+    const home=item===world.home;
+    const near=distance(item,player);
+    const show=!item.found && (sniff || (home && near<2.6));
+    item.marker.hidden=!show;
+    if(!show) continue;
+    const dx=item.x-view.position[0], dy=.5-view.position[1], dz=item.z-view.position[2];
+    const dot=unit=>dx*unit[0]+dy*unit[1]+dz*unit[2];
+    const ahead=dot(view.forward), side=dot(view.right);
+    const chartX=ahead>.12 ? .5+side*view.sx/(2*ahead) : side<0?.04:.96;
+    const chartY=ahead>.12 ? .5-dot(view.up)*view.sy/(2*ahead) : .63;
+    item.marker.style.left=clamp(chartX*viewportWidth,50,viewportWidth-50)+'px';
+    const slot=home?world.food.length:world.food.indexOf(item);
+    const isEdge=ahead<=.12||chartX<.07||chartX>.93;
+    item.marker.style.top=clamp(chartY*viewportHeight+(isEdge?(slot-1)*27:0),viewportHeight*.33,viewportHeight*.78)+'px';
+    const name=home?(world.lock.openedAt===null?(coopHost()?'队友的笼子':'墙洞密码锁'):'墙洞'):item.name;
+    const arrow=isEdge?(chartX<.5?'‹ ':'› '):'';
+    item.marker.textContent=arrow+ui(name)+' · '+Math.max(1,Math.round(near))+' m';
+  }
+}
+
+function intersects(o,x,z,r) {
+  const dx=x-clamp(x,o.x0,o.x1), dz=z-clamp(z,o.z0,o.z1);
+  return dx*dx+dz*dz<r*r;
+}
+function blocks(x,z,y,height,radius=.16) {
+  const {width,depth}=world.level;
+  if(Math.abs(x)>width/2-radius || z<radius || z>depth-radius) return true;
+  return world.obstacles.some(o=>o.max>y+.018 && o.min<y+height-.008 && intersects(o,x,z,radius));
+}
+function protectedByCover() {
+  const height=player.low?.175:.355;
+  return world.obstacles.some(o=>o.cover && o.min>=player.y+height-.007 && player.x>o.x0+.085 && player.x<o.x1-.085 && player.z>o.z0+.085 && player.z<o.z1-.085);
+}
+function clearSight(from,to,y1,y2) {
+  for(const o of world.obstacles) {
+    let lo=0,hi=1;
+    for(const [origin,end,min,max] of [[from.x,to.x,o.x0,o.x1],[from.z,to.z,o.z0,o.z1],[y1,y2,o.min,o.max]]) {
+      const offset=end-origin;
+      if(Math.abs(offset)<.0001){
+        if(origin<min||origin>max){lo=1;hi=0;break;}
+      } else {
+        const enter=(min-origin)/offset, exit=(max-origin)/offset;
+        lo=Math.max(lo,Math.min(enter,exit));hi=Math.min(hi,Math.max(enter,exit));
+        if(lo>hi) break;
+      }
+    }
+    if(lo<=hi && hi>.015 && lo<.985) return false;
+  }
+  return true;
+}
+function toggleStance() {
+  player.stance=!player.stance;
+  if(!player.stance && blocks(player.x,player.z,player.y,.355)) tell('头顶太低，离开矮缝后会自动站起来。',1.6);
+}
+function airborne(dt) {
+  if(player.ground && player.y===0 && player.vY===0) return;
+  const before=player.y, height=player.low?.175:.355;
+  player.vY-=10.5*dt;
+  const next=before+player.vY*dt;
+  if(player.vY<=0) {
+    let below=0;
+    for(const o of world.obstacles) {
+      if(before>=o.max-.025 && next<=o.max && intersects(o,player.x,player.z,.15)) below=Math.max(below,o.max);
+    }
+    if(next<=below) {player.y=below;player.vY=0;player.ground=true;return;}
+  } else if(blocks(player.x,player.z,next,height)){
+    player.vY=0;return;
+  }
+  player.ground=false;
+  player.y=next;
+}
+function updatePlayer(dt) {
+  const wasGrounded=player.ground;
+  const low=player.stance||blocks(player.x,player.z,player.y,.355);
+  player.low=low;
+  player.eye=mix(player.eye,low?.13:.323,1-Math.exp(-dt*16));
+  const height=low?.175:.355;
+  const held=(...codes)=>codes.some(code=>pressed.has(code));
+  player.yaw+=(Number(held('ArrowRight'))-Number(held('ArrowLeft')))*dt*1.64;
+  player.pitch=clamp(player.pitch+(Number(held('ArrowUp'))-Number(held('ArrowDown')))*dt*1.3,-1.22,1.22);
+  const forward=Number(held('KeyW'))-Number(held('KeyS'));
+  const side=Number(held('KeyD'))-Number(held('KeyA'));
+  const move=Math.hypot(forward,side);
+  const sprint=move>0 && held('ShiftLeft','ShiftRight') && player.stamina>.045 && !low;
+  player.stamina=clamp(player.stamina+dt*(sprint?-.32:.207),0,1);
+  const speed=low?2.0:sprint?5.55:3.17;
+  const p0=point(player.x,player.z);
+  if(move) {
+    const sine=Math.sin(player.yaw), cosine=Math.cos(player.yaw);
+    const dx=(forward*sine+side*cosine)*speed*dt/move;
+    const dz=(forward*cosine-side*sine)*speed*dt/move;
+    if(!blocks(player.x+dx,player.z,player.y,height)) player.x+=dx;
+    if(!blocks(player.x,player.z+dz,player.y,height)) player.z+=dz;
+  }
+  if(player.ground && player.y>.025 && !blocks(player.x,player.z,player.y-.05,height)) player.ground=false;
+  airborne(dt);
+  const actual=distance(player,p0)/Math.max(.001,dt);
+  player.amount=mix(player.amount,actual,1-Math.exp(-dt*12));
+  player.gait+=actual*dt*2.12;
+  footstep+=actual*dt;
+  if(player.ground && footstep>(sprint?.57:.73)) {
+    footstep=0;
+    playTone(low?83:sprint?117:96,.055,low?.018:.042,'triangle',54);
+  }
+  if(!wasGrounded&&player.ground) playTone(115,.066,.065,'triangle',46);
+  return actual>2 && sprint;
+}
+function buildCatGrid() {
+  const step=.47, width=world.level.width, depth=world.level.depth;
+  const cols=Math.ceil(width/step), rows=Math.ceil(depth/step), min=-width/2+step/2;
+  const forbidden=new Uint8Array(cols*rows);
+  for(let z=0;z<rows;z++) for(let x=0;x<cols;x++) forbidden[z*cols+x]=blocks(min+x*step,(z+.5)*step,.10,1.04,.50);
+  world.grid={step,cols,rows,min,forbidden};
+}
+function pathBetween(from,target) {
+  const {step,cols,rows,min,forbidden}=world.grid;
+  const center=(x,z)=>x+z*cols;
+  const locate=item=>{
+    const x=clamp(Math.round((item.x-min)/step),0,cols-1);
+    const z=clamp(Math.round(item.z/step-.5),0,rows-1);
+    let best=-1, score=Infinity;
+    for(let dz=-2;dz<=2;dz++) for(let dx=-2;dx<=2;dx++){
+      if(x+dx<0||x+dx>=cols||z+dz<0||z+dz>=rows) continue;
+      const index=center(x+dx,z+dz);
+      const d=Math.hypot(min+(x+dx)*step-item.x,(z+dz+.5)*step-item.z);
+      if(!forbidden[index]&&d<score){best=index;score=d;}
+    }
+    return best;
+  };
+  const start=locate(from), finish=locate(target);
+  if(start<0||finish<0||start===finish) return [];
+  const cost=new Float32Array(forbidden.length).fill(Infinity);
+  const came=new Int32Array(forbidden.length).fill(-1);
+  cost[start]=0;
+  const endX=finish%cols,endZ=Math.floor(finish/cols);
+  const queue=[[start,Math.hypot(endX-start%cols,endZ-Math.floor(start/cols))]];
+  let reached=false;
+  while(queue.length){
+    let smallest=0;
+    for(let i=1;i<queue.length;i++) if(queue[i][1]<queue[smallest][1]) smallest=i;
+    const current=queue[smallest][0];queue.splice(smallest,1);
+    if(current===finish){reached=true;break;}
+    const cx=current%cols,cz=Math.floor(current/cols);
+    for(const [dx,dz] of [[1,0],[-1,0],[0,1],[0,-1],[1,1],[-1,1],[1,-1],[-1,-1]]){
+      const x=cx+dx,z=cz+dz;
+      if(x<0||x>=cols||z<0||z>=rows) continue;
+      const next=center(x,z), diagonal=dx&&dz;
+      if(forbidden[next]||(diagonal&&(forbidden[center(x,cz)]||forbidden[center(cx,z)]))) continue;
+      const score=cost[current]+(diagonal?Math.SQRT2:1);
+      if(score>=cost[next]) continue;
+      came[next]=current;cost[next]=score;
+      queue.push([next,score+Math.hypot(endX-x,endZ-z)]);
+    }
+  }
+  if(!reached) return [];
+  const path=[];
+  for(let i=finish;i!==start;i=came[i]) path.push(point(min+i%cols*step,(Math.floor(i/cols)+.5)*step));
+  return path.reverse();
+}
+function catCanWalkTo(target) {
+  if(!target) return false;
+  const dist=distance(cat,target), steps=Math.max(1,Math.ceil(dist/.28));
+  for(let i=1;i<=steps;i++) {
+    if(blocks(mix(cat.x,target.x,i/steps),mix(cat.z,target.z,i/steps),.10,1.04,.49)) return false;
+  }
+  return true;
+}
+function navigateCat(target,dt,speed) {
+  if(!target) return;
+  if(time>=cat.repath){
+    cat.repath=time+.32;
+    cat.trail=catCanWalkTo(target)?[]:pathBetween(cat,target);
+  }
+  if(cat.trail.length && distance(cat,cat.trail[0])<.24) cat.trail.shift();
+  const next=cat.trail[0]||target;
+  const dx=next.x-cat.x, dz=next.z-cat.z, length=Math.hypot(dx,dz);
+  if(length<.095) return;
+  const heading=angleTo(dx,dz), turn=angleDiff(cat.yaw,heading);
+  cat.yaw+=clamp(turn,-dt*7.3,dt*7.3);
+  const stride=Math.min(length,dt*speed)*Math.max(.29,1-Math.abs(turn)*.32);
+  const x=cat.x+dx*stride/length,z=cat.z+dz*stride/length;
+  if(!blocks(x,z,.10,1.04,.47)){
+    cat.x=x;cat.z=z;cat.gait+=stride*(cat.phase==='hunt'?3.65:3.05);cat.speed=speed;
+  }
+}
+function updateCat(dt,sprint) {
+  const patrol=world.level.patrol;
+  if(!world.grid) buildCatGrid();
+  const near=distance(player,cat), hidden=protectedByCover();
+  const front=angleTo(player.x-cat.x,player.z-cat.z);
+  const facing=Math.abs(angleDiff(cat.yaw,front));
+  const visible=!hidden && near<(player.low?5.4:8.1) &&
+    (facing<(cat.phase==='hunt'?1.35:1.04)||near<1.55) &&
+    clearSight(cat,player,1.02,player.y+(player.low?.13:.26));
+  const footSound=!hidden && sprint && near<6.5 && clearSight(cat,player,.50,player.y+.13);
+  const noise=cageRound?.noise;
+  const heardSqueak=noise&&time<noise.until&&distance(noise,cat)<9.2&&clearSight(cat,noise,.58,.26);
+  const audible=footSound||heardSqueak;
+  const oldPhase=cat.phase;
+  if(visible){
+    cat.alert=clamp(cat.alert+dt*(near<2.2?2.25:player.low?.98:1.46),0,1);
+    cat.last=point(player.x,player.z);
+    cat.memory=3.25;
+  } else {
+    cat.alert=Math.max(0,cat.alert-dt*(cat.phase==='hunt'?.15:.46));
+    cat.memory=Math.max(0,cat.memory-dt);
+  }
+  if(audible&&cat.phase!=='hunt'){
+    cat.alert=Math.max(cat.alert,heardSqueak?.60:.38);
+    if(heardSqueak) noise.noticed=true;
+    cat.last=heardSqueak?point(noise.x,noise.z):point(player.x,player.z);
+    cat.memory=heardSqueak?3.0:2.1;
+  }
+  if(cat.alert>=.98) cat.phase='hunt';
+  else if(cat.phase==='hunt' && cat.memory<=0) cat.phase='patrol';
+  else if(cat.phase!=='hunt') cat.phase=cat.memory>0?'investigate':'patrol';
+  if(oldPhase!==cat.phase){
+    cat.repath=0;
+    if(cat.phase==='hunt') {
+      alertPulse=.95;
+      playTone(240,.21,.17,'sawtooth',72);
+      tell('猫发现你了！找柜底或拐角。',1.65);
+    }
+  }
+  let target=cat.last;
+  if(cat.phase==='patrol'){
+    target=point(...patrol[cat.goal]);
+    if(distance(cat,target)<.55){
+      cat.goal=(cat.goal+1)%patrol.length;target=point(...patrol[cat.goal]);cat.repath=0;
+    }
+  }
+  cat.speed=0;
+  const speed=cat.phase==='hunt'?(levelIndex===0?4.52:4.85):cat.phase==='investigate'?2.31:1.72;
+  if(target && distance(cat,target)>.25) navigateCat(target,dt,speed);
+  else if(cat.phase!=='patrol') cat.yaw+=dt*1.95;
+  if(!hidden && distance(player,cat)<.73 && player.y<.82 && clearSight(cat,player,.50,player.y+.15)) {
+    showModal('caught');return;
+  }
+  $('alert').classList.toggle('danger',cat.phase==='hunt');
+  setText('alertText',cat.phase==='hunt'?'猫正在追你':hidden?'你藏在阴影里':cat.phase==='investigate'?'猫正在查看动静':'猫没发现你');
+  $('alertFill').style.transform='scaleX('+cat.alert.toFixed(2)+')';
+}
+function setText(id,text) {
+  const node=$(id);
+  if(liveUi.get(id)===text) return;
+  liveUi.set(id,text);
+  const translated=ui(text);
+  if(node.textContent!==translated) node.textContent=translated;
+}
+function tell(text,duration=2.25) {
+  setText('toast',text);$('toast').hidden=false;toastUntil=time+duration;
+}
+function collectedDigits() {
+  return world.food.filter(item=>item.found).map(item=>item.digit).sort();
+}
+function refreshGoal() {
+  const found=world.food.filter(food=>food.found).length;
+  const complete=found===world.food.length;
+  const open=world.lock.openedAt!==null;
+  $('progress').lastElementChild.textContent=found+' / '+world.food.length;
+  $('progress').setAttribute('aria-label',ui('已找到 '+found+' 份食物'));
+  for(let i=0;i<found;i++) $('progress').children[i].classList.add('filled');
+  if(coopHost()) cageHostHud();
+  else {
+    setText('clueHeading','数字线索');
+    setText('task',open?'锁开了，钻进墙洞。':complete?'数字齐了，去墙洞试密码。':world.level.intro);
+    setText('clueDigits',collectedDigits().join(' · ')||'—');
+  }
+}
+function nearLockedDen() {
+  return world.lock.openedAt===null && player.y<.56 && distance(player,world.home)<1.55;
+}
+function lockFeedback(message='') {
+  setText('lockStatus',message);
+  $('lockCode').setAttribute('aria-invalid',String(Boolean(message)));
+}
+function renderLockHistory() {
+  const attempts=[...world.lock.failed];
+  $('lockHistory').hidden=attempts.length===0;
+  setText('lockHistory','试过的顺序　'+attempts.join(' · '));
+}
+function openDenLock() {
+  if(coopHost()||mode!=='play'||!nearLockedDen()) return;
+  const digits=collectedDigits();
+  if(digits.length!==world.food.length) return;
+  mode='lock';pressed.clear();drag=null;unlockPointer();
+  $('hud').inert=true;
+  $('lockScreen').hidden=false;
+  setText('lockChapter',world.level.title);
+  const input=$('lockCode');
+  input.value='';
+  lockFeedback();
+  const touch=matchMedia('(pointer:coarse)').matches;
+  const focusEntry=()=>{if(!touch) input.focus({preventScroll:true});};
+  const buttons=digits.map(digit=>{
+    const key=document.createElement('button');
+    key.type='button';key.className='lock-key';key.textContent=digit;
+    key.addEventListener('click',()=>{
+      if(input.value.length<input.maxLength) input.value+=digit;
+      lockFeedback();focusEntry();
+    });
+    return key;
+  });
+  const erase=document.createElement('button');
+  erase.type='button';erase.className='lock-key';erase.textContent='⌫';
+  erase.setAttribute('aria-label',ui('删除最后一位'));
+  erase.addEventListener('click',()=>{input.value=input.value.slice(0,-1);lockFeedback();focusEntry();});
+  $('lockKeys').replaceChildren(...buttons,erase);
+  renderLockHistory();
+  if(touch) buttons[0].focus({preventScroll:true});
+  else focusEntry();
+}
+function closeDenLock() {
+  if(mode==='lock') begin(levelIndex,false);
+}
+function tryDenCode(event) {
+  event.preventDefault();
+  if(mode!=='lock') return;
+  const input=$('lockCode');
+  const guess=input.value;
+  const digits=collectedDigits().join('');
+  if([...guess].sort().join('')!==digits) {
+    lockFeedback('请把收集到的三个数字各用一次。');
+    if(!matchMedia('(pointer:coarse)').matches) input.select();
+    return;
+  }
+  if(guess!==world.lock.answer) {
+    const repeat=world.lock.failed.has(guess);
+    world.lock.failed.add(guess);
+    renderLockHistory();
+    lockFeedback(repeat?'这个顺序试过了，换一个。':'顺序不对，换个排列再试。');
+    input.value='';
+    if(!matchMedia('(pointer:coarse)').matches) input.focus({preventScroll:true});
+    playTone(163,.18,.08,'triangle',94);
+    return;
+  }
+  world.lock.openedAt=time;
+  world.obstacles=world.obstacles.filter(box=>box!==world.lock.barrier);
+  world.grid=null;
+  cat.repath=0;
+  refreshGoal();
+  closeDenLock();
+  $('lockPrompt').hidden=true;
+  tell('密码正确，墙洞打开了！',2.1);
+  playTone(455,.30,.11,'sine',805);
+}
+function sniff() {
+  if(time<readyAt) return;
+  sniffUntil=time+2.55;readyAt=time+4.6;
+  playTone(350,.18,.065,'sine',600);
+}
+function updateGoals() {
+  for(const food of world.food){
+    if(!food.found && distance(food,player)<.66 && player.y<.56) {
+      food.found=true;refreshGoal();
+      playTone(435,.17,.095,'sine',690);
+      tell(cageRound?'找到「'+cheeseSigns[food.sign].name+'」，排在'+cageStepNames[cageRound.order.indexOf(food.sign)]+'。':'捡到'+food.name+'，获得数字 '+food.digit+'。',2.15);
+      cageSnapshot();
+    }
+  }
+  const gap=distance(player,world.home);
+  const missing=world.food.filter(food=>!food.found).length;
+  const open=world.lock.openedAt!==null;
+  if(open && (!cageRound||cageRound.escaped) && time-world.lock.openedAt>=.4 && gap<.29 && player.y<.56) {
+    playTone(500,.33,.13,'sine',850);
+    showModal(levelIndex===levels.length-1?'win':'next');
+    return;
+  }
+  const cageHint=coopHost()?cageHostHint():null;
+  $('lockPrompt').hidden=Boolean(cageRound)||missing>0||!nearLockedDen();
+  let hint='';
+  if(cageHint!==null) hint=cageHint;
+  else if(gap<2) {
+    if(open) hint='往前钻进墙洞';
+    else if(missing) hint='还差 '+missing+' 个数字';
+    else if($('lockPrompt').hidden) hint='靠近墙洞操作密码锁';
+  } else if(!player.low && world.obstacles.some(o=>o.cover && o.min>=.18 && o.min<.33 && intersects(o,player.x,player.z,.59))) hint='按 C 贴地，钻过矮缝';
+  else if(time<5.2 && time>1.45 && readyAt===0) hint='按 Q 嗅闻，寻找食物';
+  $('prompt').hidden=!hint;
+  setText('prompt',hint);
+  $('toast').hidden=time>=toastUntil;
+  const sniffProgress=1-clamp((readyAt-time)/4.6,0,1);
+  $('sniffFill').style.transform='scaleX('+sniffProgress.toFixed(2)+')';
+  $('staminaFill').style.transform='scaleX('+player.stamina.toFixed(2)+')';
+  const touch=matchMedia('(pointer:coarse)').matches;
+  setText('sniffLabel',time<sniffUntil?'正在嗅闻':time>=readyAt?(touch?'嗅闻就绪':'Q · 嗅闻'):'气味恢复中');
+  setText('stance',player.low?'贴地潜行':player.amount>3.65?'冲刺 · 猫能听见':touch?'慢走':'慢走 · C 潜行');
+}
+function audioStart() {
+  if(!audioEnabled) return;
+  try {
+    const Audio=window.AudioContext||window.webkitAudioContext;
+    if(!Audio) return;
+    if(!audioContext){
+      audioContext=new Audio();
+      audioOutput=audioContext.createGain();
+      audioOutput.gain.value=.54;
+      audioOutput.connect(audioContext.destination);
+    }
+    if(audioContext.state==='suspended') audioContext.resume().catch(()=>{});
+  } catch {}
+}
+function playTone(from,length,volume,wave,to=from) {
+  if(!audioEnabled||!audioContext||audioContext.state!=='running') return;
+  const start=audioContext.currentTime;
+  const sound=audioContext.createOscillator(), envelope=audioContext.createGain();
+  sound.type=wave;sound.frequency.setValueAtTime(from,start);
+  sound.frequency.exponentialRampToValueAtTime(to,start+length);
+  envelope.gain.setValueAtTime(.001,start);
+  envelope.gain.exponentialRampToValueAtTime(volume,start+.012);
+  envelope.gain.exponentialRampToValueAtTime(.001,start+length);
+  sound.connect(envelope);envelope.connect(audioOutput);
+  sound.start(start);sound.stop(start+length+.025);
+  sound.onended=()=>{sound.disconnect();envelope.disconnect();};
+}
+const modalData = {
+  paused:['暂停','在墙边歇一会儿','WASD 移动，鼠标或方向键转视角。C 贴地潜行，Q 嗅闻，空格跳跃，Shift 冲刺，E 打开密码锁。','继续','重开本关'],
+  caught:['被猫发现','它追上了你','冲刺会引来猫。贴地钻过矮缝，或绕到柜子后面甩开它。','再试一次','回到主菜单'],
+  next:['第一关通过','穿过墙洞了','你带上了厨房里的食物。隔着墙，储藏室里还有坚果的气味。','进入储藏室','重玩厨房'],
+  win:['两关通过','今晚吃饱了','你从两间屋子带回了食物，也赶在猫之前钻回了墙缝。','从厨房再玩','回到主菜单']
+};
+function unlockPointer() {
+  if(document.pointerLockElement===canvas && document.exitPointerLock) document.exitPointerLock();
+}
+function lockPointer() {
+  if(matchMedia('(pointer:coarse)').matches || !canvas.requestPointerLock || document.pointerLockElement===canvas) return;
+  try {
+    const request=canvas.requestPointerLock();
+    if(request && typeof request.catch==='function') request.catch(()=>{});
+  } catch {}
+}
+function showModal(reason) {
+  const coopCopy={
+    paused:['联机暂停','在墙边歇一会儿','队友也暂停了。靠近笼子后，举爪传门灯状态，再照奶酪顺序传图案。','继续','重开本关'],
+    caught:['队友被抓','猫追上了笼外的老鼠','等猫走远再传暗号，或者先绕到柜底避开它。','一起再试','退出联机'],
+    next:['第一关通过','两只老鼠都出来了','储藏室要扳三个图案扣件。先看门灯，再照奶酪上的图案顺序给队友发暗号。','进入第二关','重玩第一关'],
+    win:['两关通过','一起回到墙缝','你们用举爪和吱声打开了两扇笼门。','再玩一次','退出联机']
+  };
+  const [tag,title,copy,action,other]=(coopHost()?coopCopy:modalData)[reason];
+  mode=reason;pressed.clear();drag=null;unlockPointer();
+  setText('modalTag',tag);setText('modalTitle',title);
+  setText('modalCopy',copy);setText('modalOther',other);
+  $('modalAction').firstChild.nodeValue=ui(action);
+  $('modal').hidden=false;
+  $('modalAction').focus({preventScroll:true});
+  cageSnapshot();
+}
+function begin(index,reset=true) {
+  if(reset) createLevel(index);
+  mode='play';pressed.clear();drag=null;
+  $('menu').hidden=true;$('modal').hidden=true;$('lockScreen').hidden=true;
+  $('hud').hidden=false;$('hud').inert=false;
+  if(document.activeElement instanceof HTMLElement) document.activeElement.blur();
+  audioStart();lockPointer();
+  cageSnapshot();
+}
+function homeMenu() {
+  const hadWindow=restoreCageWindow();
+  cancelRoom();
+  $('cageScreen').hidden=true;$('coopLobby').hidden=true;$('endCoop').hidden=true;
+  $('guestConnected').hidden=true;$('coopSignals').hidden=true;$('menu').inert=false;
+  document.body.classList.remove('coop-playing');
+  unlockPointer();pressed.clear();drag=null;createLevel(0);
+  mode='menu';$('hud').hidden=true;$('modal').hidden=true;$('menu').hidden=false;
+  if(hadWindow) resize();
+  $('start').focus({preventScroll:true});
+}
+function look(dx,dy) {
+  player.yaw+=dx*.00325;
+  player.pitch=clamp(player.pitch-dy*.0031,-1.22,1.22);
+}
+function activate(code) {
+  if(code==='KeyE') {
+    if(coopHost()&&cageSignalNear()) unlockPointer();
+    else openDenLock();
+  }
+  if(code==='KeyQ') sniff();
+  if(code==='KeyC') toggleStance();
+  if(code==='Space' && player.ground && !player.low){
+    player.vY=3.05;player.ground=false;
+    playTone(126,.065,.055,'triangle',75);
+  }
+}
+function inputs() {
+  $('modalAction').insertBefore(document.createTextNode(''),$('modalAction').firstChild);
+  $('start').addEventListener('click',()=>begin(0));
+  $('pause').addEventListener('click',()=>showModal('paused'));
+  $('lockPrompt').addEventListener('click',openDenLock);
+  $('closeLock').addEventListener('click',closeDenLock);
+  $('lockForm').addEventListener('submit',tryDenCode);
+  $('lockCode').addEventListener('input',event=>{
+    const input=event.target;
+    const digits=input.value.replace(/[０-９]/g,char=>String(char.charCodeAt(0)-65296));
+    input.value=digits.replace(/[^0-9]/g,'').slice(0,input.maxLength);
+    lockFeedback();
+  });
+  $('audio').addEventListener('click',()=>{
+    audioEnabled=!audioEnabled;
+    $('audio').setAttribute('aria-pressed',String(audioEnabled));
+    setText('audio',audioEnabled?'音效 开':'音效 关');
+    $('cageAudio').setAttribute('aria-pressed',String(audioEnabled));
+    setText('cageAudio',audioEnabled?'音效 开':'音效 关');
+    if(audioEnabled) audioStart();
+    if(audioOutput) audioOutput.gain.value=audioEnabled?.54:0;
+  });
+  $('modalAction').addEventListener('click',()=>{
+    if(mode==='paused') begin(levelIndex,false);
+    else if(mode==='caught') begin(levelIndex);
+    else if(mode==='next') begin(levelIndex+1);
+    else if(mode==='win') begin(0);
+  });
+  $('modalOther').addEventListener('click',()=>{
+    if(mode==='paused'||mode==='next') begin(levelIndex);
+    else homeMenu();
+  });
+  const gameKeys=new Set(['KeyW','KeyA','KeyS','KeyD','KeyQ','KeyC','KeyE','Space','ShiftLeft','ShiftRight','ArrowUp','ArrowDown','ArrowLeft','ArrowRight']);
+  document.addEventListener('keydown',event=>{
+    if(mode==='lock'&&event.code==='Escape'){
+      event.preventDefault();
+      if(!event.repeat) closeDenLock();
+      return;
+    }
+    if(event.code==='Escape'||event.code==='KeyP'){
+      if(!event.repeat&&mode==='play'){event.preventDefault();showModal('paused');}
+      else if(!event.repeat&&mode==='paused'){event.preventDefault();begin(levelIndex,false);}
+      return;
+    }
+    if(mode==='play'&&!event.repeat&&cageLookAction(event.code)){event.preventDefault();return;}
+    if(mode!=='play'||!gameKeys.has(event.code)) return;
+    if(event.code==='Space'&&event.target instanceof HTMLButtonElement) return;
+    event.preventDefault();pressed.add(event.code);
+    if(!event.repeat) activate(event.code);
+  });
+  document.addEventListener('keyup',event=>pressed.delete(event.code));
+  document.addEventListener('mousemove',event=>{
+    if(mode==='play' && document.pointerLockElement===canvas) look(event.movementX,event.movementY);
+  });
+  document.addEventListener('pointerlockchange',()=>{
+    if(mode==='play' && document.pointerLockElement!==canvas && pressed.size) pressed.clear();
+  });
+  canvas.addEventListener('pointerdown',event=>{
+    if(mode!=='play'||document.pointerLockElement===canvas||drag) return;
+    drag={id:event.pointerId,x:event.clientX,y:event.clientY};
+    canvas.setPointerCapture(event.pointerId);event.preventDefault();
+  });
+  canvas.addEventListener('pointermove',event=>{
+    if(mode!=='play'||!drag||drag.id!==event.pointerId||document.pointerLockElement===canvas) return;
+    look(event.clientX-drag.x,event.clientY-drag.y);
+    drag.x=event.clientX;drag.y=event.clientY;
+  });
+  for(const name of ['pointerup','lostpointercapture','pointercancel']){
+    canvas.addEventListener(name,event=>{if(drag?.id===event.pointerId) drag=null;});
+  }
+  for(const button of document.querySelectorAll('[data-key]')){
+    const code=button.dataset.key;
+    button.addEventListener('pointerdown',event=>{
+      if(mode!=='play') return;
+      event.preventDefault();button.setPointerCapture(event.pointerId);
+      pressed.add(code);activate(code);
+    });
+    for(const name of ['pointerup','pointercancel','lostpointercapture']) button.addEventListener(name,()=>pressed.delete(code));
+  }
+  window.addEventListener('blur',()=>{pressed.clear();drag=null;});
+  document.addEventListener('visibilitychange',()=>{
+    if(document.hidden&&mode==='play') showModal('paused');
+  });
+}
+function resize() {
+  const cageView=mode==='guest'?$('cageViewport'):null;
+  viewportWidth=cageView?.clientWidth||window.innerWidth;
+  viewportHeight=cageView?.clientHeight||window.innerHeight;
+  const dpr=Math.min(1.5,devicePixelRatio||1,1600/Math.max(1,viewportWidth));
+  canvas.width=Math.max(1,Math.round(viewportWidth*dpr));canvas.height=Math.max(1,Math.round(viewportHeight*dpr));
+  effects.width=canvas.width;effects.height=canvas.height;
+  if(paint) paint.setTransform(dpr,0,0,dpr,0,0);
+  if(software) resizeSoftware();
+  else gl.viewport(0,0,canvas.width,canvas.height);
+}
+function run() {
+  initLanguage();
+  if(gl) {
+    try {initGL();} catch(error) {console.warn(error);gl=null;}
+  }
+  if(!gl) initSoftware();
+  createLevel(0);inputs();cageInputs();resize();openRoomInviteFromUrl();
+  window.addEventListener('resize',resize);
+  let last=performance.now(), first=last;
+  const frame=now=>{
+    const dt=clamp((now-last)/1000,0,.046);
+    last=now;
+    if(mode==='play'){
+      time+=dt;alertPulse=Math.max(0,alertPulse-dt*.66);
+      const sprint=updatePlayer(dt);
+      updateCat(dt,sprint);
+      if(mode==='play') updateGoals();
+      sendCageWorld(now);
+    }
+    const filmTime=(now-first)/1000;
+    if(mode!=='guest') render(dt,filmTime);
+    else if(now>=cageWindowFrame){
+      cageWindowFrame=now+33;
+      drawGuestWindow(dt,filmTime);
+    }
+    requestAnimationFrame(frame);
+  };
+  requestAnimationFrame(frame);
+}
+// The cage runs on the inviter's device. The guest receives only visible clues.
+const cageMaps = [
+  ['#########','#S#...#X#','#.#.#.#.#','#...#...#','###.###.#','#...#P..#','#.###.#.#','#.......#','#########'],
+  ['###########','#S..#....X#','###.#.###.#','#...#.#P..#','#.###.#.###','#.....#...#','#.#####.#.#','#P......#.#','###########']
+];
+const cheeseSigns = [
+  {icon:'☾',name:'月亮'},{icon:'♧',name:'叶子'},{icon:'♦',name:'水滴'},{icon:'✦',name:'星星'}
+];
+const cageStepNames=['最前面','第二个','第三个'];
+let cageRoom=null, cageRound=null, cageGuest=null, cageRun=0, signalRevision=0;
+const cageLatches=[];
+const coopHost=()=>cageRoom?.active && cageRoom.role==='host';
+const cageInbox={serial:0,playing:null,nextReplyAt:0};
+const cageReplies=new Map([
+  ['repeat',{host:'队友请你再传一次暗号。',guest:'已请队友再传一次。'}],
+  ['confirm',{host:'队友收到了你的暗号。',guest:'已告诉队友你收到了。'}]
+]);
+
+function newCageRound(index) {
+  signalRevision++;
+  const rows=cageMaps[index], count=index+2;
+  const tiles=rows.join('');
+  return {
+    id:++cageRun,index,tiles,cols:rows[0].length,
+    position:tiles.indexOf('S'),totalPlates:[...tiles].filter(tile=>tile==='P').length,
+    plates:new Set(),order:shuffle(cheeseSigns.map((_,i)=>i)).slice(0,count),
+    lightOn:Math.random()<.5, escaped:false,lastMove:-Infinity,
+    signalUntil:0,pawUntil:0,pawCount:0,noise:null,contact:false,reply:null,nextReplyAt:0,nextViewAt:0
+  };
+}
+function cageFood(level) {
+  const placement=shuffle(cageRound.order);
+  return level.food.slice(0,placement.length).map(([x,z,,color],i)=>({
+    x,z,name:cheeseSigns[placement[i]].name+'奶酪',color,sign:placement[i],found:false
+  }));
+}
+let cageWindowYaw=0, cageWindowPose=null, cageWindowTarget=null, cageWindowFrame=0;
+let cageObserver=null;
+function mountCageWindow() {
+  const holder=$('cageViewport');
+  holder.append(canvas,$('software'));
+  cageWindowYaw=0;
+  cageWindowPose=null;cageWindowTarget=null;
+  setText('cageWindowStatus','等待笼外画面');
+  if(typeof ResizeObserver==='function'){
+    cageObserver=new ResizeObserver(()=>{if(mode==='guest') resize();});
+    cageObserver.observe(holder);
+  }
+  resize();
+}
+function restoreCageWindow() {
+  if(canvas.parentNode!==$('cageViewport')) return false;
+  cageObserver?.disconnect();cageObserver=null;
+  const parent=effects.parentNode;
+  parent.insertBefore(canvas,effects);parent.insertBefore($('software'),effects);
+  cageWindowPose=null;cageWindowTarget=null;
+  return true;
+}
+function sendCageWorld(now) {
+  if(!coopHost()||mode!=='play'||now<cageRound.nextViewAt) return;
+  cageRound.nextViewAt=now+110;
+  const paw=time<cageRound.pawUntil?cageRound.pawCount:0;
+  const pose=[player.x,player.y,player.z,player.yaw%TAU,player.eye,player.gait%TAU,paw,
+    cat.x,cat.z,cat.yaw%TAU,cat.gait%TAU,cat.speed,cat.phase==='hunt'?1:0];
+  sendRoom({type:'view',round:cageRound.id,pose:pose.map(value=>Math.round(value*100)/100)});
+}
+function acceptCageWorld(pose) {
+  if(!Array.isArray(pose)||pose.length!==13||pose.some(value=>!Number.isFinite(value)||Math.abs(value)>120)) return;
+  cageWindowTarget=pose;
+  if(!cageWindowPose) cageWindowPose=pose.slice();
+  setText('cageWindowStatus','实时视角');
+}
+function drawGuestWindow(dt,filmTime) {
+  if(!cageGuest||canvas.parentNode!==$('cageViewport')) return;
+  const width=$('cageViewport').clientWidth, height=$('cageViewport').clientHeight;
+  if(!width||!height) return;
+  if(width!==viewportWidth||height!==viewportHeight) resize();
+  if(cageWindowPose&&cageWindowTarget) {
+    const blend=clamp(dt*11,.1,1);
+    for(const i of [0,1,2,4,7,8,11]) cageWindowPose[i]=mix(cageWindowPose[i],cageWindowTarget[i],blend);
+    for(const i of [3,5,9,10]) cageWindowPose[i]+=angleDiff(cageWindowPose[i],cageWindowTarget[i])*blend;
+    for(const i of [6,12]) cageWindowPose[i]=cageWindowTarget[i];
+  }
+  render(dt,filmTime);
+}
+function drawCageGuestMouse(pose,filmTime) {
+  const [x,y,z,yaw,eye,gait,paws]=pose;
+  const cosine=Math.cos(yaw),sine=Math.sin(yaw);
+  const movingBody=.012*Math.sin(gait*2);
+  const standing=paws>0;
+  const part=(color,ox,oy,oz,w,h,d)=>{
+    draw(element('sphere',color,x+ox*cosine+oz*sine,y+oy+movingBody,z-ox*sine+oz*cosine,w,h,d,{yaw}));
+  };
+  const headHeight=standing?.32:eye*.72;
+  part('9d7c69',0,standing?.16:.115,-.048,.233,standing?.269:.17,standing?.191:.318);
+  part('bd9980',0,headHeight,.074,.196,.154,.173);
+  part('deb4a2',0,headHeight-.035,.17,.054,.043,.041);
+  for(const side of [-1,1]){
+    part('cc9587',side*.069,headHeight+.065,.044,.077,.08,.035);
+    part('2d2924',side*.051,headHeight+.015,.138,.025,.024,.02);
+    part('c89c86',side*.096,standing&&((side>0)||(paws===2))?headHeight+.073:.05,
+      standing?.015:.09+Math.sin(gait+side*1.57)*.044,.057,.061,.076);
+  }
+  for(let i=0;i<4;i++) part('b08173',Math.sin(filmTime*3-i*.26)*i*.012,.055,-.19-i*.045,.04-i*.004,.04-i*.004,.07);
+}
+function drawCageGrate(x,z,rise) {
+  for(let i=-2;i<=2;i++) draw(element('box','77847a',x+i*.135,.25+rise,z-.21,.026,.51,.045));
+  for(const y of [.06,.42]) draw(element('box','555f55',x,y+rise,z-.215,.66,.032,.05));
+}
+
+function drawCageBars() {
+  const {x,z}=world.home;
+  const rise=world.lock.openedAt===null?0:.58*clamp((time-world.lock.openedAt)/.4,0,1);
+  if(!cageRound.escaped) {
+    const {cols,position}=cageRound;
+    const mx=x+(position%cols-(cols-1)/2)*.039;
+    const mz=z+.063;
+    draw(element('sphere','91776a',mx,.114,mz+.078,.225,.187,.218));
+    draw(element('sphere','b89a80',mx,.177,mz,.191,.154,.147));
+    for(const side of [-1,1]){
+      const sx=mx+side*.066;
+      draw(element('sphere','c6968c',sx,.248,mz+.016,.068,.076,.032));
+      draw(element('sphere','302d26',mx+side*.036,.195,mz-.066,.023,.027,.018));
+    }
+    draw(element('sphere','de9e93',mx,.158,mz-.082,.045,.035,.027));
+  }
+  drawCageGrate(x,z,rise);
+  draw(element('box','525b50',x+.68,.31,z-.30,.16,.18,.125));
+  draw(element('sphere',cageRound.lightOn?'ffc36d':'45483a',x+.68,.32,z-.368,.085,.088,.045,{glow:cageRound.lightOn?.95:0}));
+}
+function cageHostGoal(missing,open) {
+  if(open) return cageRound.escaped?'队友已出来。钻进墙洞一起撤离。':'笼门已开。等队友走到迷宫出口。';
+  if(missing) return '找齐刻着图案的奶酪。它们告诉你先扳哪个扣件。';
+  if(cageRound.plates.size<cageRound.totalPlates) return '奶酪齐了。到笼边传暗号，队友正在给机关通电。';
+  return '到笼边举爪报告门灯，再依次传奶酪图案。';
+}
+function cageHostHud() {
+  const collected=world.food.filter(food=>food.found);
+  const open=world.lock.openedAt!==null;
+  setText('task',cageHostGoal(world.food.length-collected.length,open));
+  const sequence=cageRound.order.map(sign=>collected.some(food=>food.sign===sign)?cheeseSigns[sign].icon+' '+cheeseSigns[sign].name:'？').join(' → ');
+  setText('clueHeading','扣件顺序');
+  setText('clueDigits',sequence);
+  setText('cageSignOrder','依次传图案　'+sequence);
+}
+function cageSignalNear() {
+  return coopHost() && distance(player,world.home)<2.75 && player.y<.56 && world.lock.openedAt===null;
+}
+function cageHostHint() {
+  const near=cageSignalNear(), inRange=distance(player,world.home)<2.75;
+  if(near!==cageRound.contact) {
+    cageRound.contact=near;
+    cageSnapshot();
+  }
+  $('coopSignals').hidden=!near;
+  if(near) {
+    setText('cageLampText',cageRound.lightOn?'门灯亮着 · 举一只爪告诉队友':'门灯熄了 · 举两只爪告诉队友');
+    const left=Math.max(0,cageRound.signalUntil-time);
+    const heard=cat.phase==='investigate'&&cageRound.noise?.noticed&&time<cageRound.noise.until+2.4;
+    const danger=cat.phase==='hunt'||heard;
+    const panel=$('coopSignals');
+    const dangerState=String(Boolean(danger));
+    if(panel.dataset.danger!==dangerState) panel.dataset.danger=dangerState;
+    const status=cat.phase==='hunt'?'猫在追你，先离开笼边。':heard?'猫听到了吱声，正在靠近。':left>0?'等 '+(Math.ceil(left*10)/10).toFixed(1)+' 秒再发下一串。':(document.pointerLockElement===canvas?'按 E 释放鼠标，再点图案。吱声可能引猫。':'点图案发暗号。吱声可能引猫。');
+    setText('cageSignalStatus',status);
+    for(const button of $('coopSignalButtons').children) {
+      const sign=Number(button.dataset.count)-1;
+      const unavailable=button.dataset.kind==='voice'&&!world.food.some(food=>food.sign===sign&&food.found);
+      const disabled=left>0||unavailable;
+      if(button.disabled!==disabled) button.disabled=disabled;
+    }
+    $('cageReplyText').hidden=!cageRound.reply;
+    setText('cageReplyText',cageRound.reply?.host||'');
+    return '';
+  }
+  if(!inRange) return null;
+  return world.lock.openedAt===null?'靠近笼子传暗号':cageHostGoal(0,true);
+}
+function sendCageSignal(kind,count) {
+  if(mode!=='play'||!cageSignalNear()||time<cageRound.signalUntil) return;
+  const sign=kind==='voice'?cheeseSigns[count-1]:null;
+  if(kind==='voice'&&(!sign||!world.food.some(food=>food.sign===count-1&&food.found))) return;
+  if(!sendRoom({type:'signal',round:cageRound.id,kind,count})) return;
+  cageRound.signalUntil=time+(kind==='voice'?.78+count*.22:.90);
+  cageRound.reply=null;
+  if(kind==='gesture') {
+    player.stance=false;
+    cageRound.pawCount=count;cageRound.pawUntil=time+1.15;
+    tell(count===1?'举一只爪，传出「灯亮」':'举两只爪，传出「灯灭」',1.1);
+  } else {
+    cageRound.noise={x:player.x,z:player.z,until:time+.9+.22*count};
+    pulseSqueaks(count);
+    tell('传出了「'+sign.name+'」。留意猫的脚步。',1.4);
+  }
+}
+let mouseSqueakBank=[];
+function mouseSqueakSamples(sampleRate,variation) {
+  const duration=.087+variation*.007;
+  const samples=new Float32Array(Math.floor(sampleRate*duration));
+  let phase=0, previous=0, seed=873989+2531*variation;
+  for(let i=0;i<samples.length;i++){
+    const t=i/samples.length;
+    const peak=Math.exp(-Math.pow((t-.31)/.25,2));
+    const flutter=Math.sin(t*TAU*4.5)*83+Math.sin(t*TAU*9)*41;
+    const frequency=1960+variation*103+peak*2280-t*520+flutter;
+    phase+=TAU*frequency/sampleRate;
+    seed=(Math.imul(seed,1664525)+1013904223)>>>0;
+    const noise=seed/2147483648-1;
+    const breath=(noise-previous)*(.09+.05*Math.sin(t*Math.PI));
+    previous=noise;
+    const middle=1-.25*Math.exp(-Math.pow((t-.61)/.066,2));
+    const envelope=Math.pow(Math.sin(t*Math.PI),.75)*Math.exp(-t*.8)*middle;
+    samples[i]=.255*envelope*(Math.sin(phase)+.27*Math.sin(2*phase+.26)+.105*Math.sin(3*phase+.61)+breath);
+  }
+  return samples;
+}
+function playMouseSqueak(variation) {
+  if(!audioEnabled||!audioContext||audioContext.state!=='running') return;
+  let buffer=mouseSqueakBank[variation];
+  if(!buffer){
+    const samples=mouseSqueakSamples(audioContext.sampleRate,variation);
+    buffer=audioContext.createBuffer(1,samples.length,audioContext.sampleRate);
+    buffer.getChannelData(0).set(samples);
+    mouseSqueakBank[variation]=buffer;
+  }
+  const source=audioContext.createBufferSource();
+  source.buffer=buffer;
+  source.connect(audioOutput);
+  source.onended=()=>source.disconnect();
+  source.start();
+}
+
+function pulseSqueaks(count,onPulse) {
+  const room=cageRoom, revision=++signalRevision;
+  for(let i=0;i<count;i++) window.setTimeout(()=>{
+    if(cageRoom!==room||signalRevision!==revision) return;
+    playMouseSqueak(i%4);
+    if(onPulse) onPulse();
+  },i*250);
+}
+function cageLookAction(code) {
+  if(!coopHost()) return false;
+  if(code==='KeyR'||code==='KeyT') sendCageSignal('gesture',code==='KeyR'?1:2);
+  else if(/^(Digit|Numpad)[1-4]$/.test(code)) sendCageSignal('voice',Number(code.at(-1)));
+  else return false;
+  return true;
+}
+function cageMove(position,dx,dy,cols,tiles) {
+  const x=position%cols+dx,y=Math.floor(position/cols)+dy;
+  if(x<0||x>=cols||y<0||y>=tiles.length/cols) return -1;
+  const next=y*cols+x;
+  return tiles[next]==='#'?-1:next;
+}
+function cageSnapshot() {
+  if(!coopHost()||!cageRound) return;
+  const ready=cageRound.plates.size===cageRound.totalPlates;
+  sendRoom({
+    type:'state',round:cageRound.id,index:levelIndex,phase:mode,position:cageRound.position,
+    plates:[...cageRound.plates],powered:ready,escaped:cageRound.escaped,
+    open:world.lock.openedAt!==null,contact:mode==='play'&&cageSignalNear(),
+    found:world.food.filter(food=>food.found).length
+  });
+}
+function acceptCageMove(message) {
+  if(mode!=='play'||cageRound.escaped||!Number.isInteger(message.dx)||!Number.isInteger(message.dy)||
+      Math.abs(message.dx)+Math.abs(message.dy)!==1) return;
+  const now=performance.now();
+  if(now-cageRound.lastMove<64) return;
+  const {cols,tiles,position}=cageRound;
+  const next=cageMove(position,message.dx,message.dy,cols,tiles);
+  if(next<0 || (tiles[next]==='X'&&world.lock.openedAt===null)) return;
+  cageRound.lastMove=now;cageRound.position=next;
+  if(tiles[next]==='P'&&!cageRound.plates.has(next)) {
+    cageRound.plates.add(next);
+    if(cageRound.plates.size===cageRound.totalPlates) tell('队友已给笼门机关通电。',2.0);
+    cageHostHud();
+  }
+  if(tiles[next]==='X'){
+    cageRound.escaped=true;cageHostHud();
+    tell('队友出来了！从墙洞一起撤离。',2.5);
+  }
+  cageSnapshot();
+}
+function acceptCageGuess(message) {
+  if(mode!=='play'||world.lock.openedAt!==null) return;
+  const signs=message.signs, order=cageRound.order;
+  let feedback='',problem='';
+  if(cageRound.plates.size!==cageRound.totalPlates) feedback='先踩亮迷宫里的金色踏板，给机关通电。';
+  else if(world.food.some(food=>!food.found)) feedback='等队友找齐刻着图案的奶酪。';
+  else if(typeof message.lamp!=='boolean'||!Array.isArray(signs)||signs.length!==order.length||
+          signs.some(sign=>!Number.isInteger(sign)||!cheeseSigns[sign])) feedback='先拨好门灯的状态，再扳齐图案扣件。';
+  else if(message.lamp!==cageRound.lightOn) feedback='门灯拨杆的方向不对。看看队友举的是一只爪还是两只爪。';
+  else if(order.some((sign,i)=>signs[i]!==sign)){
+    feedback='扣件的顺序不对，扣件已复位。请队友再传一次图案。';
+    problem='latches';
+  }
+  if(feedback) {
+    sendRoom({type:'feedback',round:cageRound.id,text:feedback,problem});
+    return;
+  }
+  world.lock.openedAt=time;
+  world.obstacles=world.obstacles.filter(box=>box!==world.lock.barrier);
+  world.grid=null;cat.repath=0;
+  $('coopSignals').hidden=true;
+  refreshGoal();
+  tell('笼门开了！等队友跑到出口。',2.15);
+  playTone(455,.30,.11,'sine',805);
+  cageSnapshot();
+}
+function acceptCageReply(replyId) {
+  const reply=cageReplies.get(replyId);
+  if(!reply||mode!=='play') return;
+  if(!cageSignalNear()) {
+    sendRoom({type:'replyAck',round:cageRound.id,status:'far'});
+    return;
+  }
+  if(time<cageRound.nextReplyAt) {
+    sendRoom({type:'replyAck',round:cageRound.id,status:'wait'});
+    return;
+  }
+  cageRound.nextReplyAt=time+.85;
+  cageRound.reply=reply;
+  sendRoom({type:'replyAck',round:cageRound.id,status:replyId});
+}
+function replyFromCage(replyId) {
+  if(cageGuest?.phase!=='play'||cageGuest.open||!cageGuest.contact||
+      !cageReplies.has(replyId)||performance.now()<cageInbox.nextReplyAt) return;
+  if(sendRoom({type:'reply',round:cageGuest.round,reply:replyId})) {
+    cageInbox.nextReplyAt=performance.now()+1000;
+    setText('cageContact','正在送出回应…');
+  } else setText('cageContact','回应没送出，请稍后再试。');
+}
+function receiveCoop(message) {
+  if(!message||typeof message!=='object') return;
+  if(coopHost()){
+    if(message.type==='ready') cageSnapshot();
+    else if(message.round===cageRound?.id){
+      if(message.type==='move') acceptCageMove(message);
+      else if(message.type==='guess') acceptCageGuess(message);
+      else if(message.type==='reply') acceptCageReply(message.reply);
+    }
+    return;
+  }
+  if(cageRoom?.role!=='guest'||!cageRoom.active) return;
+  if(message.type==='state') updateCageView(message);
+  else if(cageGuest&&message.round===cageGuest.round) {
+    if(message.type==='view') acceptCageWorld(message.pose);
+    else if(message.type==='signal') displayCageSignal(message.kind,message.count);
+    else if(message.type==='replyAck') {
+      const update=cageReplies.get(message.status)?.guest;
+      if(update) setText('cageContact',update);
+      else if(message.status==='far') setText('cageContact','队友离开了笼边，靠近后可以再试。');
+      else if(message.status==='wait') setText('cageContact','等一下再回应。');
+    } else if(message.type==='feedback'&&typeof message.text==='string') {
+      if(message.problem==='latches') {
+        cageLatches.length=0;
+        renderCageMechanism();
+      }
+      setText('cageFeedback',message.text.slice(0,130));
+      playTone(155,.16,.08,'triangle',95);
+    }
+  }
+}
+function buildMaze(index) {
+  const rows=cageMaps[index], tiles=rows.join(''),cols=rows[0].length;
+  const container=$('mazeGrid');
+  container.style.setProperty('--cols',cols);
+  const cells=[...tiles].map((tile,i)=>{
+    const cell=document.createElement('button');
+    cell.type='button';
+    cell.tabIndex=-1;
+    cell.textContent=tile==='P'?'◆':tile==='X'?'↗':'';
+    cell.setAttribute('aria-hidden','true');
+    cell.addEventListener('click',()=>{
+      if(!cageGuest) return;
+      const from=cageGuest.position;
+      moveFromCage(i%cols-from%cols,Math.floor(i/cols)-Math.floor(from/cols));
+    });
+    return cell;
+  });
+  container.replaceChildren(...cells);
+}
+function drawSignalMouse(paws=0) {
+  const context=$('signalMouse').getContext('2d');
+  if(!context) return;
+  const ellipse=(color,x,y,rx,ry,rotation=0)=>{
+    context.fillStyle=color;context.beginPath();context.ellipse(x,y,rx,ry,rotation,0,TAU);context.fill();
+  };
+  context.clearRect(0,0,140,82);
+  context.strokeStyle='#846c62';context.lineWidth=4;context.beginPath();
+  context.moveTo(62,67);context.quadraticCurveTo(42,80,29,71);context.stroke();
+  for(const side of [-1,1]) {
+    ellipse('#8e7568',70+side*13,68,10,5);
+    ellipse('#9e8572',70+side*13,27,8,9);
+    ellipse('#c69488',70+side*13,26,5,6);
+  }
+  ellipse('#a58c75',70,57,18,18);ellipse('#c7ad91',70,59,11,11);
+  ellipse('#af947d',70,40,18,15);ellipse('#e2c5a5',70,47,10,6);
+  ellipse('#c68b80',70,45,3.2,2.4);
+  ellipse('#201f19',62,39,2.2,2.8);ellipse('#201f19',78,39,2.2,2.8);
+  for(const side of [-1,1]) {
+    const up=paws===2||(paws===1&&side===1);
+    ellipse('#9e8571',70+side*(up?20:14),up?45:57,4,up?12:9,-side*.40);
+    ellipse('#d8a79c',70+side*(up?24:14),up?35:61,4,4);
+  }
+  const width=2;
+  context.fillStyle='#6c7872';
+  for(const x of [24,47,93,116]) context.fillRect(x,0,width,82);
+}
+function finishSqueakReplay() {
+  const cue=cageInbox.playing;
+  if(!cue) return;
+  cue.button.classList.remove('playing');
+  for(const dot of cue.dots) dot.hidden=false;
+  cageInbox.playing=null;
+}
+function replaySqueaks(cue) {
+  finishSqueakReplay();
+  cageInbox.playing=cue;
+  cue.button.classList.add('playing');
+  for(const dot of cue.dots) dot.hidden=true;
+  let played=0;
+  pulseSqueaks(cue.dots.length,()=>{
+    cue.dots[played++].hidden=false;
+    if(played===cue.dots.length) finishSqueakReplay();
+  });
+}
+function displayCageSignal(kind,count) {
+  if(kind==='gesture'&&(count===1||count===2)){
+    drawSignalMouse(count);
+    setText('signalText',count===1?'一只爪 · 把拨杆拨到灯亮':'两只爪 · 把拨杆拨到灯灭');
+    return;
+  }
+  if(kind!=='voice'||!Number.isInteger(count)||!cheeseSigns[count-1]) return;
+  const sign=cheeseSigns[count-1];
+  const serial=++cageInbox.serial;
+  const row=document.createElement('li');
+  const button=document.createElement('button');
+  button.type='button';
+  button.className='squeak-replay';
+  button.setAttribute('aria-label',ui('重听第 '+serial+' 个图案，'+sign.name));
+  const label=document.createElement('span');
+  label.textContent=sign.icon+' '+ui(sign.name);label.className='cue-symbol';
+  const group=document.createElement('span');
+  group.className='squeak-dots';
+  group.setAttribute('aria-hidden','true');
+  const dots=Array.from({length:count},()=>Object.assign(document.createElement('i'),{className:'squeak-dot'}));
+  const replayLabel=document.createElement('span');
+  replayLabel.textContent=ui('重听');replayLabel.className='replay-label';
+  group.append(...dots);
+  button.append(label,group,replayLabel);
+  row.append(button);
+  const cue={button,dots};
+  button.addEventListener('click',()=>replaySqueaks(cue));
+  const history=$('squeakHistory');
+  history.append(row);
+  if(history.children.length>3) history.firstElementChild.remove();
+  $('squeakEmpty').hidden=true;
+  replaySqueaks(cue);
+}
+function renderCageMechanism() {
+  const state=cageGuest;
+  const active=state?.phase==='play'&&!state.open;
+  const powered=active&&state.powered;
+  const limit=state?state.index+2:0;
+  const lamp=$('cageLamp').querySelector('input:checked');
+  const enoughCheese=state?.found===limit;
+  $('cageLamp').disabled=!active;
+  for(const [sign,button] of Array.from($('cageLatchButtons').children).entries()){
+    const used=cageLatches.includes(sign);
+    button.classList.toggle('pulled',used);
+    button.setAttribute('aria-pressed',String(used));
+    button.disabled=!powered||used||cageLatches.length>=limit;
+  }
+  $('undoCageLatch').disabled=!powered||cageLatches.length===0;
+  $('cageSubmit').disabled=!powered||!enoughCheese||!lamp||cageLatches.length!==limit;
+  const sequence=cageLatches.map(i=>cheeseSigns[i].icon+' '+cheeseSigns[i].name).join(' → ');
+  setText('cageLatchQueue',sequence||(state?.powered?'还没扳动扣件':'等待机关通电'));
+  const hint=state?.open?'笼门已打开，走到绿色出口。':!state?.powered?'先踩亮迷宫里的金色踏板。':
+    !enoughCheese?'队友正在寻找刻着图案的奶酪。':!lamp?'根据队友的举爪暗号拨灯。':
+    cageLatches.length<limit?'照吱声暗号依次扳'+(limit-cageLatches.length)+'个扣件。':'拨杆和扣件已就位，可以拉开笼门。';
+  setText('cageGateStatus',hint);
+}
+function updateCageView(state) {
+  if(!Number.isInteger(state.index)||!cageMaps[state.index]||!Number.isInteger(state.round)||
+      !Number.isInteger(state.position)||!Array.isArray(state.plates)||typeof state.powered!=='boolean') return;
+  const rows=cageMaps[state.index], tiles=rows.join(''), cols=rows[0].length;
+  if(state.position<0||state.position>=tiles.length||tiles[state.position]==='#') return;
+  const prior=cageGuest;
+  const newCage=prior?.round!==state.round;
+  const justOpened=state.open&&prior&&!newCage&&!prior.open;
+  const contactChanged=newCage||prior.contact!==state.contact||prior.phase!==state.phase||prior.open!==state.open;
+  cageGuest=state;
+  if(newCage) {
+    signalRevision++;
+    finishSqueakReplay();
+    cageInbox.serial=0;cageInbox.nextReplyAt=0;
+    $('cageForm').reset();
+    cageLatches.length=0;
+    $('squeakHistory').replaceChildren();
+    $('squeakEmpty').hidden=false;
+    drawSignalMouse();
+    setText('signalText','还没收到举爪暗号');
+    setText('cageFeedback','');
+    if(mode==='guest'&&canvas.parentNode===$('cageViewport')){
+      createLevel(state.index);
+      cageWindowPose=null;cageWindowTarget=null;
+      setText('cageWindowStatus','等待笼外画面');
+    }
+    buildMaze(state.index);
+  }
+  if(justOpened) {
+    setText('cageFeedback','开锁成功。走到绿色出口！');
+    playTone(455,.30,.11,'sine',805);
+  }
+  setText('cageChapter','第 '+(state.index+1)+' 关 · 笼内');
+  setText('cageTitle',levels[state.index].title);
+  setText('plates','机关 '+state.plates.length+' / '+[...tiles].filter(tile=>tile==='P').length);
+  setText('outsideProgress','队友找到 '+state.found+' / '+(state.index+2)+' 块');
+  setText('mazeTask',state.escaped?'已出笼。等队友带你从墙洞撤离。':state.open?'笼门已开，前往绿色出口。':state.powered?'机关通电了。去扳右侧的笼门扣件。':'走到每块金色踏板上，给笼门机关通电。');
+  if(newCage||state.position!==prior.position||state.open!==prior.open||state.phase!==prior.phase||
+      state.escaped!==prior.escaped||state.plates.length!==prior.plates.length) {
+    const cells=$('mazeGrid').children;
+    for(let i=0;i<tiles.length;i++) {
+      const cell=cells[i],tile=tiles[i];
+      const adjacent=Math.abs(i%cols-state.position%cols)+Math.abs(Math.floor(i/cols)-Math.floor(state.position/cols))===1;
+      const reachable=state.phase==='play'&&!state.escaped&&adjacent&&tile!=='#'&&(tile!=='X'||state.open);
+      const style=['maze-tile',tile==='#'?'wall':'',tile==='P'?(state.plates.includes(i)?'plate lit':'plate'):'',tile==='X'?(state.open?'exit open':'exit'):'',state.position===i?'mouse':'',reachable?'reachable':''].filter(Boolean).join(' ');
+      if(cell.className!==style) cell.className=style;
+      if(cell.disabled===reachable) cell.disabled=!reachable;
+    }
+  }
+  const active=state.phase==='play'&&!state.open;
+  if(contactChanged) {
+    $('cageConfirm').disabled=!active||!state.contact;
+    $('cageRepeat').disabled=!active||!state.contact;
+    setText('cageContact',state.open?'笼门已经打开。':!active?'等下一次行动。':state.contact?'队友在笼边，可以回应。':'等队友到笼边。');
+  }
+  if(newCage||active!==(prior.phase==='play'&&!prior.open)||state.powered!==prior.powered||state.found!==prior.found){
+    renderCageMechanism();
+  }
+  const notices={paused:'队友暂停了游戏。',caught:'队友被猫抓住了，等待重新开始。',next:'第一关通过。等待队友进入储藏室。',win:'两关通过！你们一起回到了墙缝。'};
+  const notice=notices[state.phase];
+  $('cageNotice').hidden=!notice;
+  setText('cageNotice',notice||'');
+}
+function moveFromCage(dx,dy) {
+  if(cageGuest?.phase!=='play'||cageGuest.escaped||Math.abs(dx)+Math.abs(dy)!==1) return;
+  sendRoom({type:'move',round:cageGuest.round,dx,dy});
+}
+
+
+let lobbyAttempt=0;
+const RTC_PREFIX='M3.';
+const RTC_OLDER_PREFIXES=['M2.','MOUSE1.'];
+const RTC_MAX_DESCRIPTION=26000;
+const RTC_SERVERS=[{urls:['stun:stun.l.google.com:19302','stun:stun.cloudflare.com:3478']}];
+
+// Token order is part of the compact connection code format.
+const RTC_WORDS=[
+  'v=0\r\n','o=- ',' IN IP4 127.0.0.1','s=-\r\n','t=0 0\r\n',
+  'a=group:BUNDLE ','a=extmap-allow-mixed\r\n','a=msid-semantic: WMS',
+  'm=application 9 UDP/DTLS/SCTP webrtc-datachannel\r\n',
+  'm=application ',' UDP/DTLS/SCTP webrtc-datachannel',
+  'c=IN IP4 0.0.0.0\r\n','c=IN IP4 ','c=IN IP6 ','c=IN IP4 127.0.0.1',
+  'a=ice-ufrag:','a=ice-pwd:','a=ice-options:trickle\r\n','a=ice-options:',
+  'a=fingerprint:sha-256 ','a=setup:actpass\r\n','a=setup:active\r\n','a=setup:passive\r\n',
+  'a=mid:','a=sctp-port:5000\r\n','a=sctp-port:','a=max-message-size:',
+  'a=candidate:','a=end-of-candidates\r\n','a=end-of-candidates','a=ice-lite',
+  ' 1 udp ',' 1 tcp ',' 1 UDP ',' 1 TCP ',' typ host',' typ srflx',' typ relay',' typ prflx',
+  ' raddr ',' rport ',' tcptype passive',' tcptype active',' generation 0',' ufrag ',
+  ' network-id ',' network-cost ','\r\n','\n','.local'
+];
+const RTC_TOKEN_BY_WORD=new Map(RTC_WORDS.map((word,index)=>[word,128+index]));
+const RTC_WORD_PATTERN=RTC_WORDS.slice().sort((a,b)=>b.length-a.length)
+  .map(word=>word.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'));
+const RTC_HEX_SHA='[0-9A-F]{2}(?::[0-9A-F]{2}){31}';
+const RTC_HEX_UUID='[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}';
+const RTC_SDP_PATTERN=new RegExp([RTC_HEX_SHA,RTC_HEX_UUID,...RTC_WORD_PATTERN].join('|'),'g');
+
+function packRoomSdp(sdp) {
+  const packet=[];
+  const encoder=new TextEncoder();
+  const raw=text=>{
+    for(const byte of encoder.encode(text)) {
+      if(byte===0||byte>=126) packet.push(0);
+      packet.push(byte);
+    }
+  };
+  let cursor=0;
+  for(const match of sdp.matchAll(RTC_SDP_PATTERN)) {
+    raw(sdp.slice(cursor,match.index));
+    const word=match[0], token=RTC_TOKEN_BY_WORD.get(word);
+    if(token!==undefined) packet.push(token);
+    else {
+      packet.push(word.includes(':')?127:126);
+      const hex=word.replace(/[:-]/g,'');
+      for(let i=0;i<hex.length;i+=2) packet.push(parseInt(hex.slice(i,i+2),16));
+    }
+    cursor=match.index+word.length;
+  }
+  raw(sdp.slice(cursor));
+  return packet;
+}
+
+function unpackRoomSdp(packet) {
+  const result=[];
+  const encoder=new TextEncoder();
+  const append=word=>result.push(...encoder.encode(word));
+  for(let i=0;i<packet.length;i++){
+    const byte=packet[i];
+    if(byte===0) {
+      if(++i>=packet.length) throw Error('incomplete byte');
+      result.push(packet[i]);
+    } else if(byte===126||byte===127) {
+      const length=byte===126?16:32;
+      if(i+length>=packet.length) throw Error('incomplete hex field');
+      let hex='';
+      for(let offset=0;offset<length;offset++) {
+        const value=packet[++i].toString(16).padStart(2,'0');
+        if(byte===127&&offset) hex+=':';
+        if(byte===126&&[4,6,8,10].includes(offset)) hex+='-';
+        hex+=byte===127?value.toUpperCase():value;
+      }
+      append(hex);
+    } else if(byte>=128) {
+      const word=RTC_WORDS[byte-128];
+      if(word===undefined) throw Error('unknown token');
+      append(word);
+    } else result.push(byte);
+    if(result.length>RTC_MAX_DESCRIPTION) throw Error('description too long');
+  }
+  return new TextDecoder('utf-8',{fatal:true}).decode(Uint8Array.from(result));
+}
+
+function roomCode(kind,id,sdp) {
+  if(sdp.length>RTC_MAX_DESCRIPTION) throw Error('连接信息太长，请重新配对。');
+  const bytes=[kind==='offer'?0:1];
+  for(let i=0;i<id.length;i+=2) bytes.push(parseInt(id.slice(i,i+2),16));
+  bytes.push(...packRoomSdp(sdp));
+  return RTC_PREFIX+btoa(String.fromCharCode(...bytes)).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+}
+function readRoomCode(raw,kind) {
+  const code=raw.replace(/[\s\u200B\u200C\u200D\u2060\uFEFF]/g,'');
+  if(RTC_OLDER_PREFIXES.some(prefix=>code.startsWith(prefix))) throw Error('队友用的是旧版。请两个人都打开最新版，再重新配对。');
+  let data;
+  try {
+    if(code.length>70000||!code.startsWith(RTC_PREFIX)) throw Error('invalid prefix or length');
+    const base64=code.slice(RTC_PREFIX.length);
+    if(!/^[A-Za-z0-9_-]+$/.test(base64)) throw Error('invalid base64');
+    const packet=Uint8Array.from(atob(base64.replace(/-/g,'+').replace(/_/g,'/')),char=>char.charCodeAt(0));
+    if(packet.length<10||(packet[0]!==0&&packet[0]!==1)) throw Error('invalid packet');
+    data={
+      kind:packet[0]===0?'offer':'answer',
+      id:Array.from(packet.subarray(1,9),byte=>byte.toString(16).padStart(2,'0')).join(''),
+      sdp:unpackRoomSdp(packet.subarray(9))
+    };
+    if(!data.sdp.startsWith('v=0')) throw Error('invalid payload');
+  } catch {
+    throw Error('连接码不完整，请重新复制整段。');
+  }
+  if(data.kind!==kind) {
+    throw Error(kind==='offer'?'请粘贴创建者发来的邀请码。':'请粘贴加入者发回的应答码。');
+  }
+  return data;
+}
+function lobbyMessage(message) {setText('lobbyStatus',message);}
+function cancelRoom() {
+  const room=cageRoom;
+  cageRoom=null;cageRound=null;cageGuest=null;signalRevision++;
+  if(!room) return;
+  clearTimeout(room.timer);clearTimeout(room.reconnect);clearTimeout(room.linkTimer);
+  room.channel?.close();room.pc?.close();
+  room.link?.close();room.peer?.destroy();
+  if(room.transport==='lan') lanLeave(room);
+}
+function roomEnded(message='') {
+  cancelRoom();homeMenu();
+  if(message){openCageLobby();lobbyMessage(message);}
+}
+function setLobbyChoice() {
+  lobbyAttempt++;
+  $('processCode').disabled=false;
+  $('lobbyChoice').hidden=false;$('roomSteps').hidden=true;$('resetLobby').hidden=true;
+  $('shortHostPanel').hidden=true;$('shortGuestForm').hidden=true;$('manualPairing').hidden=false;
+  $('shortJoinValue').value='';$('shortRoomCode').value='';
+  $('copyLanInvite').hidden=true;$('lanInviteValue').hidden=true;$('lanInviteValue').value='';
+  $('submitShortRoom').disabled=false;$('copyShortRoom').disabled=true;
+  $('inviteIn').hidden=true;$('inviteOut').hidden=true;
+  $('receivedCode').value='';$('ownCode').value='';
+  lobbyMessage('');
+}
+function openCageLobby() {
+  cancelRoom();setLobbyChoice();
+  $('coopLobby').hidden=false;$('menu').inert=true;
+  $('hostRoom').focus({preventScroll:true});
+}
+function closeCageLobby() {
+  cancelRoom();lobbyAttempt++;$('coopLobby').hidden=true;$('menu').inert=false;
+  $('openCoop').focus({preventScroll:true});
+}
+function roomError(room) {
+  if(cageRoom!==room) return;
+  roomEnded(room.active?'和队友的连接断开了，请重新配对。':'连接没能建立。确认已完整交换连接码，然后重试。有些网络会阻止直连。');
+}
+function newPeer(role,id) {
+  if(!window.RTCPeerConnection) throw Error('这个浏览器无法联机。请试试桌面版 Chrome、Edge 或 Safari。');
+  cancelRoom();
+  const pc=new RTCPeerConnection({iceServers:RTC_SERVERS});
+  const room={role,id,pc,active:false,channel:null,timer:0,reconnect:0};
+  cageRoom=room;
+  pc.addEventListener('connectionstatechange',()=>{
+    if(cageRoom!==room) return;
+    clearTimeout(room.reconnect);
+    if(pc.connectionState==='failed') roomError(room);
+    else if(pc.connectionState==='disconnected') room.reconnect=setTimeout(()=>roomError(room),9500);
+  });
+  return room;
+}
+function beginPairedCage(room) {
+  if(cageRoom!==room||room.active) return;
+  room.active=true;
+  clearTimeout(room.timer);
+  $('coopLobby').hidden=true;$('menu').inert=false;
+  if(room.role==='host'){
+    $('endCoop').hidden=false;$('guestConnected').hidden=false;
+    document.body.classList.add('coop-playing');
+    begin(0);
+    tell('队友被困在笼子里。按 Q 寻找带图案的奶酪。',3.15);
+  } else {
+    mode='guest';$('menu').hidden=true;$('hud').hidden=true;$('cageScreen').hidden=false;
+    mountCageWindow();
+    setText('cageNotice','已连接。等待笼外队友开始。');
+    $('cageNotice').hidden=false;
+    sendRoom({type:'ready'});
+  }
+}
+function receiveRoomPayload(room,raw) {
+  if(cageRoom!==room||typeof raw!=='string'||raw.length>3600) return;
+  let message;
+  try {message=JSON.parse(raw);} catch {return;}
+  receiveCoop(message);
+}
+function attachChannel(room,channel) {
+  if(cageRoom!==room||channel.label!=='mouse-cage'||room.channel){channel.close();return;}
+  room.channel=channel;
+  channel.addEventListener('open',()=>beginPairedCage(room));
+  channel.addEventListener('message',event=>receiveRoomPayload(room,event.data));
+  channel.addEventListener('close',()=>roomError(room));
+  channel.addEventListener('error',()=>roomError(room));
+  if(channel.readyState==='open') beginPairedCage(room);
+}
+function sendRoom(payload) {
+  const room=cageRoom;
+  if(room?.transport==='lan') return lanSend(room,JSON.stringify(payload));
+  const channel=room?.transport==='short'?room.link:room?.channel;
+  if(!channel||(room.transport==='short'?!channel.open:channel.readyState!=='open')) return false;
+  try {channel.send(JSON.stringify(payload));return true;} catch {return false;}
+}
+const LAN_ROOM_ROOT='/mouse-lan/rooms';
+let lanDiscovery=null;
+function discoverLanHost() {
+  if(typeof location==='undefined'||!/^https?:$/.test(location.protocol)) return Promise.resolve(null);
+  if(!lanDiscovery) lanDiscovery=(async()=>{
+    const check=new AbortController();
+    const timeout=setTimeout(()=>check.abort(),2200);
+    try {
+      const response=await fetch('/mouse-lan/status',{signal:check.signal,cache:'no-store'});
+      if(!response.ok) return null;
+      const data=await response.json();
+      return data.relay===1&&typeof data.origin==='string'?data:null;
+    } catch {return null;}
+    finally {clearTimeout(timeout);}
+  })();
+  return lanDiscovery;
+}
+
+async function lanRequest(path,data,signal) {
+  const response=await fetch(path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data),signal});
+  const body=await response.json();
+  if(!response.ok) {
+    const error=Error(body.error||'房间暂时无法连接。');
+    error.relay=true;
+    throw error;
+  }
+  return body;
+}
+function lanLeave(room) {
+  clearTimeout(room?.lanTimer);
+  room?.lanAbort?.abort();
+  if(!room?.lanKey) return;
+  fetch(LAN_ROOM_ROOT+'/'+room.code+'/leave',{
+    method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:room.lanKey}),keepalive:true
+  }).catch(()=>{});
+}
+function lanSend(room,raw) {
+  if(!room.active||room.outbox.length>=128) return false;
+  room.outbox.push([++room.txSerial,raw]);
+  return true;
+}
+async function syncLanRoom(room) {
+  if(cageRoom!==room) return;
+  const abort=new AbortController();
+  room.lanAbort=abort;
+  const timeout=setTimeout(()=>abort.abort(),4800);
+  try {
+    const state=await lanRequest(LAN_ROOM_ROOT+'/'+room.code+'/sync',{
+      key:room.lanKey,ack:room.rxSerial,packets:room.outbox.slice(0,32)
+    },abort.signal);
+    if(cageRoom!==room) return;
+    room.lastLanSync=performance.now();
+    while(room.outbox.length&&room.outbox[0][0]<=state.accepted) room.outbox.shift();
+    if(state.paired&&!room.active) beginPairedCage(room);
+    for(const [serial,packet] of state.packets){
+      if(serial<=room.rxSerial) continue;
+      if(serial!==room.rxSerial+1) throw Error('房间消息顺序无法同步。');
+      room.rxSerial=serial;
+      receiveRoomPayload(room,packet);
+      if(cageRoom!==room) return;
+    }
+    room.lanTimer=setTimeout(()=>syncLanRoom(room),room.active?100:350);
+  } catch(error) {
+    if(cageRoom!==room) return;
+    if(error.relay||performance.now()-room.lastLanSync>8500) {
+      failShortRoom(room,error.message==='The operation was aborted.'?'连接超时，请两边留在游戏页面再试一次。':error.message);
+    } else room.lanTimer=setTimeout(()=>syncLanRoom(room),450);
+  } finally {
+    clearTimeout(timeout);
+    if(room.lanAbort===abort) room.lanAbort=null;
+  }
+}
+async function openLanRoom(room,relay) {
+  room.transport='lan';
+  room.relay=relay;
+  room.outbox=[];room.txSerial=0;room.rxSerial=0;
+  const abort=new AbortController();
+  room.lanAbort=abort;
+  const timeout=setTimeout(()=>abort.abort(),5500);
+  try {
+    const path=room.role==='host'?LAN_ROOM_ROOT:LAN_ROOM_ROOT+'/'+room.code+'/join';
+    const entry=await lanRequest(path,{},abort.signal);
+    if(cageRoom!==room) return;
+    room.lanKey=entry.key;
+    room.code=entry.code;
+    room.lastLanSync=performance.now();
+    if(room.role==='host'){
+      $('shortRoomCode').value=room.code;$('copyShortRoom').disabled=false;
+      $('copyLanInvite').hidden=false;
+      lobbyMessage('复制邀请链接给同 Wi‑Fi 的队友，保持游戏页打开。');
+    }
+    void syncLanRoom(room);
+  } catch(error) {
+    failShortRoom(room,error.relay?error.message:'没能连上同 Wi‑Fi 的游戏房间，请检查开房电脑上的启动窗口。');
+  } finally {
+    clearTimeout(timeout);
+    if(room.lanAbort===abort) room.lanAbort=null;
+  }
+}
+function roomInviteUrl(room) {
+  const url=new URL(location.href);
+  const local=['localhost','127.0.0.1','[::1]'].includes(url.hostname);
+  const invite=local?new URL('/',room.relay.origin):new URL('/',url.origin);
+  invite.searchParams.set('room',room.code);
+  if(gameLanguage==='en') invite.searchParams.set('lang','en');
+  return invite.href;
+}
+async function copyLanInvite() {
+  const room=cageRoom;
+  if(room?.transport!=='lan'||!room.lanKey) return;
+  const link=roomInviteUrl(room);
+  try {
+    await navigator.clipboard.writeText(link);
+    if(cageRoom===room) lobbyMessage('已复制邀请链接，发给同 Wi‑Fi 的队友。');
+  } catch {
+    if(cageRoom!==room) return;
+    const input=$('lanInviteValue');
+    input.value=link;input.hidden=false;input.focus();input.select();
+    lobbyMessage('已选中邀请链接，按 Ctrl+C 或 ⌘C 复制。');
+  }
+}
+function openRoomInviteFromUrl() {
+  if(typeof location==='undefined'||!/^https?:$/.test(location.protocol)) return;
+  const code=normalizeShortCode(new URL(location.href).searchParams.get('room')||'');
+  if(!validShortCode(code)) return;
+  openCageLobby();enterShortRoomCode();
+  $('shortJoinValue').value=code;
+  lobbyMessage('已填好队友的房间码。点「加入房间」。');
+}
+
+const ROOM_ALPHABET='23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
+const ROOM_ID_PREFIX='mouse-after-dark-m3-';
+const ROOM_LINK_LABEL='mouse-cage-m3';
+const PEER_CLIENT_URL='https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.5.5/peerjs.min.js';
+let peerClientLoading=null;
+
+function loadPeerClient() {
+  if(typeof window.Peer==='function') return Promise.resolve(window.Peer);
+  if(peerClientLoading) return peerClientLoading;
+  peerClientLoading=new Promise((resolve,reject)=>{
+    const script=document.createElement('script');
+    const failed=()=>{
+      clearTimeout(timeout);
+      script.remove();
+      reject(Error('房间码服务暂时连不上。可以展开「手动配对」继续。'));
+    };
+    const timeout=setTimeout(failed,9500);
+    script.src=PEER_CLIENT_URL;
+    script.referrerPolicy='no-referrer';
+    script.onload=()=>{
+      if(typeof window.Peer!=='function'){failed();return;}
+      clearTimeout(timeout);
+      resolve(window.Peer);
+    };
+    script.onerror=failed;
+    document.head.append(script);
+  }).catch(error=>{
+    peerClientLoading=null;
+    throw error;
+  });
+  return peerClientLoading;
+}
+function newRoomCode() {
+  return Array.from(crypto.getRandomValues(new Uint8Array(6)),byte=>ROOM_ALPHABET[byte&31]).join('');
+}
+function normalizeShortCode(raw) {
+  return raw.trim().toUpperCase().replace(/[\s-]/g,'');
+}
+function validShortCode(code) {
+  return code.length===6&&Array.from(code).every(char=>ROOM_ALPHABET.includes(char));
+}
+function showShortLobby(role,code='') {
+  $('lobbyChoice').hidden=true;$('manualPairing').hidden=true;
+  $('shortHostPanel').hidden=role!=='host';$('shortGuestForm').hidden=role!=='guest';
+  $('resetLobby').hidden=false;
+  $('shortJoinValue').value=code;
+}
+function enterShortRoomCode() {
+  cancelRoom();lobbyAttempt++;
+  showShortLobby('guest');
+  $('submitShortRoom').disabled=false;
+  lobbyMessage('');
+  $('shortJoinValue').focus();
+}
+function failShortRoom(room,message) {
+  if(cageRoom!==room) return;
+  if(room.active) {roomError(room);return;}
+  cancelRoom();
+  setLobbyChoice();
+  if(room.role==='guest'){
+    showShortLobby('guest',room.code);
+    $('manualPairing').hidden=false;
+    $('shortJoinValue').focus();
+  }
+  lobbyMessage(message);
+}
+function makeShortRoom(role,code) {
+  cancelRoom();
+  const room={role,code,active:false,transport:'short',peer:null,link:null,timer:0,linkTimer:0,reconnect:0};
+  cageRoom=room;
+  return room;
+}
+function attachShortLink(room,link) {
+  if(cageRoom!==room||room.link||link.label!==ROOM_LINK_LABEL||link.metadata?.version!==RTC_PREFIX){
+    link.close();return;
+  }
+  room.link=link;
+  const pendingGone=()=>{
+    if(cageRoom!==room||room.link!==link) return;
+    if(room.active){roomError(room);return;}
+    clearTimeout(room.linkTimer);
+    room.link=null;
+    link.close();
+    if(room.role==='host') lobbyMessage('队友暂未连上，房间仍在等候。请让对方再试一次。');
+    else failShortRoom(room,'没能连到队友。留在游戏页再试，或者展开「手动配对」。');
+  };
+  room.linkTimer=setTimeout(pendingGone,19000);
+  const onOpen=()=>{
+    if(cageRoom!==room||room.link!==link||room.active) return;
+    clearTimeout(room.linkTimer);
+    beginPairedCage(room);
+  };
+  link.on('open',onOpen);
+  link.on('data',value=>{
+    if(room.link===link) receiveRoomPayload(room,value);
+  });
+  link.on('close',pendingGone);
+  link.on('error',pendingGone);
+  if(link.open) onOpen();
+}
+async function openShortRoom(role,code,retry=0) {
+  const room=makeShortRoom(role,code);
+  showShortLobby(role,role==='guest'?code:'');
+  $('shortRoomCode').value='';
+  $('copyLanInvite').hidden=true;$('lanInviteValue').hidden=true;
+  $('copyShortRoom').disabled=true;
+  $('submitShortRoom').disabled=true;
+  lobbyMessage(role==='host'?'正在创建房间…':'正在加入 '+code+' …');
+  audioStart();
+  try {
+    if(typeof location!=='undefined'&&/^https?:$/.test(location.protocol)){
+      const relay=await discoverLanHost();
+      if(cageRoom!==room) return;
+      if(relay){await openLanRoom(room,relay);return;}
+    }
+    if(!window.RTCPeerConnection) throw Error('这个浏览器无法联机。请用桌面版 Chrome、Edge 或 Safari 打开。');
+    const Peer=await loadPeerClient();
+    if(cageRoom!==room) return;
+    // Set HTTPS explicitly because the downloadable game also runs from file URLs.
+    const peer=new Peer(role==='host'?ROOM_ID_PREFIX+code:undefined,{secure:true,config:{iceServers:RTC_SERVERS}});
+    room.peer=peer;
+    room.timer=setTimeout(()=>failShortRoom(room,'连接房间码服务超时，可以重试或展开「手动配对」。'),14000);
+    peer.on('connection',link=>{
+      if(role==='host') attachShortLink(room,link);
+      else link.close();
+    });
+    peer.on('error',error=>{
+      if(cageRoom!==room||room.active) return;
+      if(role==='host'&&error.type==='unavailable-id'&&retry<2) {
+        void openShortRoom('host',newRoomCode(),retry+1);
+      } else {
+        const message=error.type==='peer-unavailable'?'找不到该房间。确认队友的游戏页面开着，核对房间码后再试。':
+          '房间码暂时连不上。可以重试或展开「手动配对」。';
+        failShortRoom(room,message);
+      }
+    });
+    peer.on('disconnected',()=>{
+      if(cageRoom===room&&!room.active) failShortRoom(room,'与房间码服务的连接断开了，请重试。');
+    });
+    peer.on('open',()=>{
+      if(cageRoom!==room||room.active) return;
+      clearTimeout(room.timer);
+      if(role==='host'){
+        $('shortRoomCode').value=code;
+        $('copyShortRoom').disabled=false;
+        lobbyMessage('发给队友，留在这个页面等待加入。');
+        room.timer=setTimeout(()=>failShortRoom(room,'房间码已过期，请创建新房间。'),600000);
+      } else {
+        let link;
+        try {
+          link=peer.connect(ROOM_ID_PREFIX+code,{label:ROOM_LINK_LABEL,metadata:{version:RTC_PREFIX},reliable:true,serialization:'json'});
+        } catch {
+          failShortRoom(room,'加入失败。请再试一次或展开「手动配对」。');
+          return;
+        }
+        if(link) attachShortLink(room,link);
+        else failShortRoom(room,'加入失败。请检查房间码并重试。');
+      }
+    });
+  } catch(error) {
+    failShortRoom(room,error.message||'暂时无法连接房间，请重试。');
+  }
+}
+async function copyShortRoomCode() {
+  const room=cageRoom, input=$('shortRoomCode');
+  if(!room||room.role!=='host'||!validShortCode(input.value)) return;
+  try {
+    await navigator.clipboard.writeText(input.value);
+    if(cageRoom===room) lobbyMessage('已复制房间码，发给队友即可。');
+  } catch {
+    if(cageRoom!==room) return;
+    input.focus();input.select();
+    lobbyMessage('已选中房间码，按 Ctrl+C 或 ⌘C 复制。');
+  }
+}
+function submitShortRoom(event) {
+  event.preventDefault();
+  if($('submitShortRoom').disabled) return;
+  const input=$('shortJoinValue'), code=normalizeShortCode(input.value);
+  if(!validShortCode(code)) {
+    lobbyMessage('请输入队友发来的 6 位房间码。');
+    input.focus();
+    return;
+  }
+  void openShortRoom('guest',code);
+}
+
+async function gatherRoomIce(pc) {
+  if(pc.iceGatheringState==='complete') return;
+  await new Promise(resolve=>{
+    const check=()=>{if(pc.iceGatheringState==='complete'||pc.signalingState==='closed') finish();};
+    const finish=()=>{
+      pc.removeEventListener('icegatheringstatechange',check);
+      clearTimeout(timer);resolve();
+    };
+    const timer=setTimeout(finish,6500);
+    pc.addEventListener('icegatheringstatechange',check);check();
+  });
+}
+function outputCode(label,code) {
+  setText('ownLabel',label);
+  setText('copyRoomCode',label.includes('邀请码')?'复制邀请码':'复制应答码');
+  $('ownCode').value=code;$('ownCodeDetails').open=false;$('inviteOut').hidden=false;
+}
+function requestCode(label,action) {
+  setText('receivedLabel',label);setText('processCode',action);
+  $('receivedCode').value='';$('inviteIn').hidden=false;
+}
+async function hostCageRoom() {
+  $('lobbyChoice').hidden=true;$('roomSteps').hidden=false;$('resetLobby').hidden=false;
+  $('shortHostPanel').hidden=true;$('shortGuestForm').hidden=true;$('manualPairing').hidden=true;
+  $('roomSteps').prepend($('inviteOut'));
+  lobbyMessage('正在生成邀请连接码…');
+  audioStart();
+  let room;
+  try {
+    const id=[...crypto.getRandomValues(new Uint32Array(2))].map(n=>n.toString(16).padStart(8,'0')).join('');
+    room=newPeer('host',id);
+    attachChannel(room,room.pc.createDataChannel('mouse-cage',{ordered:true}));
+    await room.pc.setLocalDescription(await room.pc.createOffer());
+    await gatherRoomIce(room.pc);
+    if(cageRoom!==room) return;
+    outputCode('1. 把邀请码发给队友',roomCode('offer',room.id,room.pc.localDescription.sdp));
+    requestCode('2. 粘贴队友发回的应答码','建立连接');
+    lobbyMessage('等待队友回传应答连接码。');
+  } catch(error) {
+    if(room&&cageRoom!==room) return;
+    cancelRoom();setLobbyChoice();
+    lobbyMessage(error.message||'无法创建联机。');
+  }
+}
+function joinCageRoom() {
+  cancelRoom();lobbyAttempt++;
+  $('lobbyChoice').hidden=true;$('roomSteps').hidden=false;$('resetLobby').hidden=false;
+  $('shortHostPanel').hidden=true;$('shortGuestForm').hidden=true;$('manualPairing').hidden=true;
+  $('roomSteps').prepend($('inviteIn'));
+  requestCode('1. 粘贴创建者发来的邀请码','生成应答连接码');
+  lobbyMessage('生成后，把应答连接码发回给队友。');
+  $('receivedCode').focus({preventScroll:true});
+}
+async function processCageCode() {
+  const button=$('processCode'), incoming=$('receivedCode').value;
+  let room=cageRoom;
+  const attempt=++lobbyAttempt;
+  button.disabled=true;audioStart();
+  try {
+    if(room?.role==='host'){
+      const data=readRoomCode(incoming,'answer');
+      if(data.id!==room.id) throw Error('这不是本次邀请生成的应答连接码。');
+      await room.pc.setRemoteDescription({type:'answer',sdp:data.sdp});
+      if(cageRoom!==room||room.active) return;
+      $('inviteIn').hidden=true;lobbyMessage('正在连接队友…');
+      room.timer=setTimeout(()=>{if(!room.active) roomError(room);},26000);
+    } else {
+      const data=readRoomCode(incoming,'offer');
+      room=newPeer('guest',data.id);
+      room.pc.addEventListener('datachannel',event=>attachChannel(room,event.channel));
+      lobbyMessage('正在生成应答连接码…');
+      await room.pc.setRemoteDescription({type:'offer',sdp:data.sdp});
+      await room.pc.setLocalDescription(await room.pc.createAnswer());
+      await gatherRoomIce(room.pc);
+      if(cageRoom!==room||room.active) return;
+      outputCode('2. 将应答码发回创建者',roomCode('answer',room.id,room.pc.localDescription.sdp));
+      $('inviteIn').hidden=true;lobbyMessage('等队友粘贴。连接成功后会自动进入笼内。');
+    }
+  } catch(error) {
+    if(room&&cageRoom!==room) return;
+    if(room?.role==='guest') cancelRoom();
+    lobbyMessage(error.message||'连接码处理失败，请重试。');
+  } finally {
+    if(attempt===lobbyAttempt) button.disabled=false;
+  }
+}
+async function copyCageCode() {
+  const input=$('ownCode'), attempt=lobbyAttempt;
+  try {
+    await navigator.clipboard.writeText(input.value);
+    if(attempt===lobbyAttempt&&!$('inviteOut').hidden) lobbyMessage('已复制，发给你的队友。');
+  } catch {
+    if(attempt!==lobbyAttempt||$('inviteOut').hidden) return;
+    $('ownCodeDetails').open=true;
+    input.focus();input.select();
+    lobbyMessage('已选中连接码，可以按 Ctrl+C 或 ⌘C 复制。');
+  }
+}
+async function pasteCageCode() {
+  const input=$('receivedCode'), attempt=lobbyAttempt;
+  try {
+    const code=await navigator.clipboard.readText();
+    if(attempt!==lobbyAttempt||$('inviteIn').hidden) return;
+    if(!code.trim()) {
+      input.focus();
+      lobbyMessage('剪贴板是空的，请先复制队友的连接码。');
+      return;
+    }
+    input.value=code.trim();
+    $('processCode').focus();
+  } catch {
+    if(attempt!==lobbyAttempt||$('inviteIn').hidden) return;
+    input.focus();
+    lobbyMessage('可以按 Ctrl+V 或 ⌘V 粘贴连接码。');
+  }
+}
+function cageInputs() {
+  const events={openCoop:openCageLobby,closeLobby:closeCageLobby,
+    hostRoom:()=>openShortRoom('host',newRoomCode()),joinRoom:enterShortRoomCode,
+    hostManual:hostCageRoom,joinManual:joinCageRoom,copyShortRoom:copyShortRoomCode,copyLanInvite,
+    processCode:processCageCode,copyRoomCode:copyCageCode,pasteRoomCode:pasteCageCode,
+    leaveCage:()=>roomEnded(),endCoop:()=>roomEnded(),
+    cageLookLeft:()=>{cageWindowYaw=clamp(cageWindowYaw+.42,-1.05,1.05);},
+    cageLookForward:()=>{cageWindowYaw=0;},
+    cageLookRight:()=>{cageWindowYaw=clamp(cageWindowYaw-.42,-1.05,1.05);},
+    cageAudio:()=>$('audio').click(),cageConfirm:()=>replyFromCage('confirm'),cageRepeat:()=>replyFromCage('repeat'),
+    resetLobby:()=>{cancelRoom();setLobbyChoice();$('hostRoom').focus({preventScroll:true});}};
+  for(const [id,listener] of Object.entries(events)) $(id).addEventListener('click',listener);
+  $('shortGuestForm').addEventListener('submit',submitShortRoom);
+  for(const [sign,shape] of cheeseSigns.entries()) {
+    const send=document.createElement('button');
+    send.type='button';send.className='utility';send.dataset.kind='voice';send.dataset.count=String(sign+1);
+    const key=document.createElement('kbd');key.textContent=sign+1;
+    const signalName=document.createTextNode('');
+    registerUi(signalName,shape.icon+' '+shape.name);
+    send.append(key,signalName);
+    $('coopSignalButtons').append(send);
+    const latch=document.createElement('button');
+    latch.type='button';latch.className='latch-button';latch.disabled=true;
+    const handle=document.createElement('span');handle.className='latch-handle';handle.textContent=shape.icon;
+    const latchName=document.createTextNode('');
+    registerUi(latchName,shape.name);
+    latch.append(handle,latchName);
+    registerUi(latch,'扳动'+shape.name+'扣件','aria-label');
+    latch.addEventListener('click',()=>{
+      if(latch.disabled||cageLatches.includes(sign)) return;
+      cageLatches.push(sign);
+      renderCageMechanism();
+      setText('cageFeedback','');
+      playTone(165,.075,.08,'triangle',116);
+    });
+    $('cageLatchButtons').append(latch);
+  }
+  for(const button of $('coopSignalButtons').children) {
+    button.addEventListener('click',()=>sendCageSignal(button.dataset.kind,Number(button.dataset.count)));
+  }
+  $('cageLamp').addEventListener('change',()=>{
+    renderCageMechanism();
+    setText('cageFeedback','');
+  });
+  $('undoCageLatch').addEventListener('click',()=>{
+    if($('undoCageLatch').disabled) return;
+    cageLatches.pop();renderCageMechanism();setText('cageFeedback','');
+  });
+  $('cageForm').addEventListener('submit',event=>{
+    event.preventDefault();
+    if($('cageSubmit').disabled||cageGuest?.phase!=='play'||cageGuest.open) return;
+    const lamp=$('cageLamp').querySelector('input:checked');
+    if(!lamp) return;
+    setText('cageFeedback','');
+    if(!sendRoom({type:'guess',round:cageGuest.round,signs:cageLatches,lamp:lamp.value==='lit'})) {
+      setText('cageFeedback','连接暂时断开，请稍后再拉笼门。');
+    }
+  });
+  const moves={ArrowUp:[0,-1],ArrowDown:[0,1],ArrowLeft:[-1,0],ArrowRight:[1,0],KeyW:[0,-1],KeyS:[0,1],KeyA:[-1,0],KeyD:[1,0]};
+  document.addEventListener('keydown',event=>{
+    if(mode==='guest'&&moves[event.code]&&!event.target.matches?.('input,textarea,select,[contenteditable]')){
+      event.preventDefault();moveFromCage(...moves[event.code]);
+    } else if(event.code==='Escape'&&!$('coopLobby').hidden) {
+      event.preventDefault();closeCageLobby();
+    }
+  });
+}
+
+
+try {run();} catch(error) {
+  console.error(error);
+  $('start').disabled=true;
+  setText('lead','当前浏览器无法启动 3D 渲染。请试试用桌面浏览器打开。');
+}
+</script>
+</body>
+</html>
