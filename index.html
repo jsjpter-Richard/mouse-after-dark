@@ -343,7 +343,6 @@ const englishUi={
   "按住前进键往上爬，后退键往下爬": "Hold Forward to climb up, Back to climb down",
   "在爬架上": "On the ladder",
   "高处安全 · 猫在下面": "Safe up high · The cat is below",
-  "按 C 钻进锁前的矮遮挡": "Press C to crawl under cover by the lock",
   "食物笔记": "Food Notes",
   "收集食物上的数字。锁旁的图案提示第一位。": "Collect the digits on the food. The carving by the lock hints at the first digit.",
   "数字齐了。去墙洞看图案，找出第一位。": "You have all three digits. Check the carving by the mouse hole for the first digit.",
@@ -809,7 +808,7 @@ const levels = [
     food:[[-5.68,7.0,'榛果','e4a464'],[5.75,17.6,'核桃','ecc98b'],[.82,14.5,'松子','e6c9a0']],
     patrol:[[3.85,3.56],[4.8,8.5],[4.7,13.4],[4.75,17.65],[2.5,20.65],[-1.35,21.2],
       [-4.55,19.35],[-4.85,15.0],[-4.75,10.35],[-4.32,6.3],[-4.6,2.6],[-1.17,4.83],[2.25,8.0],[4.55,5.45]],
-    scene:'pantry', denCover:'927254'
+    scene:'pantry'
   },
   {
     title:'越过水槽', intro:'沿金色爬架上桌，跳过水槽的干踏点。墙洞在地面。',
@@ -817,9 +816,9 @@ const levels = [
     width:14, depth:18.6, spawn:[-2.6,1.36,0], home:[2.8,18.18],
     light:[-2.6,4.5,10.3], fog:'25424a',
     food:[[2.35,5.8,'饼干屑','e5aa66'],[-2.75,7.2,'面包屑','d9aa69',1.64],[-2.62,14.48,'奶酪','f9b74d',1.64]],
-    patrol:[[2.8,3.4],[5.47,5.75],[5.22,8.7],[4.44,13.55],[4.56,15.45],[1.15,16.55],
+    patrol:[[2.8,3.4],[5.47,5.75],[5.22,8.7],[4.44,13.55],[4.56,15.45],[2.8,17.14],[1.15,16.55],
       [-5.42,16.48],[-5.53,12.56],[-5.42,8.85],[-5.36,4.9],[-4.7,2.58],[-.84,2.52]],
-    scene:'sink', denCover:'85735c'
+    scene:'sink', pounceReach:1.08
   },
   {
     title:'洗衣房的高架', intro:'沿金色爬架上高架，走过窄板。墙洞在地面。',
@@ -827,7 +826,9 @@ const levels = [
     width:14, depth:18.8, spawn:[-2.92,1.44,0], home:[2.62,18.37],
     light:[-1.95,4.5,10.9], fog:'343d55',
     food:[[1.95,6.25,'饼干屑','dfa96e'],[-3.38,10.46,'松子','eac47a',2.24],[-2.66,14.37,'奶酪','ffbe60',2.24]],
-    patrol:[[1.7,3.66],[4.65,7.6],[3.84,12.2],[4.2,16.7],[.6,16.9],[.1,7.6]],
+    patrol:[[1.7,3.66],[4.65,6.5],[4.75,11.1],[4.4,15.45],[2,16.8],[0,17.05],
+      [-2.2,17.08],[-5.13,16.65],[-4.99,14.76],[-5.37,12.64],[-5.45,8.7],
+      [-5.21,5.15],[-5.12,2.09],[-3.14,2.12],[-.95,2.28]],
     scene:'laundry'
   }
 ];
@@ -1312,8 +1313,9 @@ function laundryRoom() {
     box(['a65e51','a39d76','536f79','917381'][i],x-.83,1.25,z,.61,1.00,.047,{material:3});
     box('ccc1ae',x-.83,.772,z,.62,.085,.055,{material:3});
   }
-  crate(-5.49,4.03,1.83,1.56,.93,'82665c');
-  crate(-5.38,14.75,1.74,1.35,.72,'6c6472');
+  // Leave a floor aisle between the wall-side crates and the washer and rack.
+  crate(-6.23,1.85,1.08,1.19,.93,'82665c');
+  crate(-6.24,14.75,1.24,1.35,.72,'6c6472');
   box('6c8387',2.75,.025,7.4,3.1,.051,3.0,{material:3});
   for(const z of [5.95,8.85]) box('b68c69',2.75,.035,z,3.07,.025,.08,{material:3});
   makeWindow(-1.48,18.64,2.73,1.72,2.95);
@@ -1519,12 +1521,10 @@ function createLevel(index) {
   const food=cageRound?cageFood(level):level.food.map(([x,z,name,color,y=0],i)=>({x,y,z,name,color,digit:digits[i],found:false}));
   const answer=cageRound?'':shuffle(digits).join('');
   const firstFood=index===0&&!cageRoom?.active?food.find(item=>item.digit===answer[0]).name:null;
-  const sheltered=Boolean(level.denCover&&!cageRoom?.active);
-  const lock={answer,firstFood,sheltered,failed:new Set(),openedAt:null};
+  const lock={answer,firstFood,failed:new Set(),openedAt:null};
   world={level,shapes:[],obstacles:[],climbs:[],water:null,dryCheckpoint:null,checkpoint:null,food,lock,home:point(...level.home)};
   environment(level);
   levelScenes[level.scene]();
-  if(sheltered) narrowPass(world.home.x,world.home.z-.93,1.80,1.62,level.denCover);
   const [x,z,yaw]=level.spawn;
   player={x,z,y:0,yaw,pitch:.035,eye:.33,vY:0,stamina:1,stance:false,low:false,ground:true,gait:0,amount:0,climb:null,splashUntil:0};
   const [cx,cz]=level.patrol[0], [nx,nz]=level.patrol[1];
@@ -2145,7 +2145,9 @@ function updateCat(dt,sprint) {
   if(cat.patrolStall>1.15){
     cat.goal=(cat.goal+1)%patrol.length;cat.repath=0;cat.patrolStall=0;
   }
-  if(!hidden && distance(player,cat)<.73 && player.y<.82 && clearSight(cat,player,.50,player.y+.15)) {
+  const canPounce=world.level.pounceReach && cat.phase==='hunt' && visible && Math.abs(angleDiff(cat.yaw,front))<.85;
+  const reach=canPounce?world.level.pounceReach:.73;
+  if(!hidden && distance(player,cat)<reach && player.y<.82 && clearSight(cat,player,.50,player.y+.15)) {
     showModal('caught');return;
   }
   $('alert').classList.toggle('danger',!aboveCat&&cat.phase==='hunt');
@@ -2311,7 +2313,6 @@ function updateGoals() {
   else if(climb) hint='';
   else if(atSink) hint=matchMedia('(pointer:coarse)').matches?'点「跳跃」跳到下一块干踏点':'按空格跳到下一块干踏点';
   else if(cageHint!==null) hint=cageHint;
-  else if(world.lock.sheltered&&!open&&!player.low&&gap<2.55&&$('lockPrompt').hidden) hint='按 C 钻进锁前的矮遮挡';
   else if(gap<2) {
     if(open) hint='往前钻进墙洞';
     else if(missing) hint='还差 '+missing+' 个数字';
