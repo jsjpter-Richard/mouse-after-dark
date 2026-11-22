@@ -324,6 +324,12 @@ html[lang=en] #coopLobby{align-items:safe center}
 'use strict';
 const $ = id => document.getElementById(id);
 const englishUi={
+  "下一关交换角色。你在笼内，队友在笼外。": "You will swap roles next level. You will be inside the cage and your partner will be outside.",
+  "换位并开始下一关": "Swap Roles and Continue",
+  "通关了！下一关你在笼外，等队友点继续。": "Level complete! You are outside next. Wait for your partner to continue.",
+  "换位了！这关你在笼外，找到奶酪图案，帮队友开门。": "Roles swapped! You are outside. Find the cheese symbols to help your partner open the cage.",
+  "换位了！这关你在笼内，正在准备迷宫。": "Roles swapped! You are inside the cage. Waiting for the maze.",
+  "换位消息未送出，请再试一次。": "Could not send the role swap. Try again.",
   "起始关卡": "Start at",
   "第 1 关 · 厨房": "Level 1 · Kitchen",
   "第 2 关 · 储藏室": "Level 2 · Pantry",
@@ -2252,13 +2258,19 @@ function showModal(reason) {
   const coopCopy={
     paused:['联机暂停','在墙边歇一会儿','队友也暂停了。靠近笼子后，举爪传门灯状态，再照奶酪顺序传图案。','继续','重开本关'],
     caught:['队友被抓','猫追上了笼外的老鼠','等猫走远再传暗号，或者先绕到柜底避开它。','一起再试','退出联机'],
-    next:['第一关通过','两只老鼠都出来了','储藏室要扳三个图案扣件。先看门灯，再照奶酪上的图案顺序给队友发暗号。','进入第二关','重玩第一关'],
     win:['到达终点','一起回到墙缝','你们穿过墙洞，一起回到了墙缝。','再玩一次','退出联机']
   };
   const nextStage=reason==='next'&&levelIndex>0;
   const nextCopy=levelIndex===1?'沿金色爬架上台面，用空格跳过水槽。':'沿金色爬架登上两层高架，再走过窄板。';
-  const [tag,title,copy,action,other]=nextStage?
-    ['关卡通过',levels[levelIndex+1].title,nextCopy,'下一关','重玩本关']:(coopHost()?coopCopy:modalData)[reason];
+  let panel;
+  if(reason==='next'&&coopHost()){
+    panel=['关卡通过',levels[levelIndex+1].title,'下一关交换角色。你在笼内，队友在笼外。','换位并开始下一关','重玩本关'];
+  } else if(nextStage){
+    panel=['关卡通过',levels[levelIndex+1].title,nextCopy,'下一关','重玩本关'];
+  } else {
+    panel=(coopHost()?coopCopy:modalData)[reason];
+  }
+  const [tag,title,copy,action,other]=panel;
   mode=reason;pressed.clear();drag=null;unlockPointer();
   setText('modalTag',tag);setText('modalTitle',title);
   setText('modalCopy',copy);setText('modalOther',other);
@@ -2334,7 +2346,10 @@ function inputs() {
   $('modalAction').addEventListener('click',()=>{
     if(mode==='paused') begin(levelIndex,false);
     else if(mode==='caught') begin(levelIndex);
-    else if(mode==='next') begin(levelIndex+1);
+    else if(mode==='next') {
+      if(coopHost()) swapToCage();
+      else begin(levelIndex+1);
+    }
     else if(mode==='win') begin(0);
   });
   $('modalOther').addEventListener('click',()=>{
@@ -2433,7 +2448,7 @@ function run() {
   };
   requestAnimationFrame(frame);
 }
-// The cage runs on the inviter's device. The guest receives only visible clues.
+// The outside player's device runs the round. The player in the cage receives its visible state.
 const cageMaps = [
   ['#########','#S#...#X#','#.#.#.#.#','#...#...#','###.###.#','#...#P..#','#.###.#.#','#.......#','#########'],
   ['###########','#S..#....X#','###.#.###.#','#...#.#P..#','#.###.#.###','#.....#...#','#.#####.#.#','#P......#.#','###########'],
@@ -2447,7 +2462,7 @@ const cageStepNames=['最前面','第二个','第三个'];
 const cageSignCount=index=>Math.min(index+2,3);
 let cageRoom=null, cageRound=null, cageGuest=null, cageRun=0, signalRevision=0;
 const cageLatches=[];
-const coopHost=()=>cageRoom?.active && cageRoom.role==='host';
+const coopHost=()=>cageRoom?.active && (cageRoom.outside??(cageRoom.role==='host'));
 const cageInbox={serial:0,playing:null,nextReplyAt:0};
 const cageReplies=new Map([
   ['repeat',{host:'队友请你再传一次暗号。',guest:'已请队友再传一次。'}],
@@ -2694,9 +2709,9 @@ function cageMove(position,dx,dy,cols,tiles) {
   return tiles[next]==='#'?-1:next;
 }
 function cageSnapshot() {
-  if(!coopHost()||!cageRound) return;
+  if(!coopHost()||!cageRound) return false;
   const ready=cageRound.plates.size===cageRound.totalPlates;
-  sendRoom({
+  return sendRoom({
     type:'state',round:cageRound.id,index:levelIndex,phase:mode,position:cageRound.position,
     plates:[...cageRound.plates],powered:ready,escaped:cageRound.escaped,
     open:world.lock.openedAt!==null,contact:mode==='play'&&cageSignalNear(),
@@ -2773,7 +2788,7 @@ function replyFromCage(replyId) {
   } else setText('cageContact','回应没送出，请稍后再试。');
 }
 function receiveCoop(message) {
-  if(!message||typeof message!=='object') return;
+  if(!cageRoom?.active||!message||typeof message!=='object') return;
   if(coopHost()){
     if(message.type==='ready') cageSnapshot();
     else if(message.round===cageRound?.id){
@@ -2783,10 +2798,13 @@ function receiveCoop(message) {
     }
     return;
   }
-  if(cageRoom?.role!=='guest'||!cageRoom.active) return;
   if(message.type==='state') updateCageView(message);
   else if(cageGuest&&message.round===cageGuest.round) {
-    if(message.type==='view') acceptCageWorld(message.pose);
+    if(message.type==='swap'){
+      if(cageGuest.phase==='next'&&message.index===cageGuest.index+1&&levels[message.index]){
+        enterOutsideView(message.index,true);
+      }
+    } else if(message.type==='view') acceptCageWorld(message.pose);
     else if(message.type==='signal') displayCageSignal(message.kind,message.count);
     else if(message.type==='replyAck') {
       const update=cageReplies.get(message.status)?.guest;
@@ -2924,11 +2942,13 @@ function renderCageMechanism() {
   setText('cageGateStatus',hint);
 }
 function updateCageView(state) {
-  if(!Number.isInteger(state.index)||!cageMaps[state.index]||!Number.isInteger(state.round)||
+  if(!Number.isInteger(state.index)||!cageMaps[state.index]||!Number.isSafeInteger(state.round)||state.round<1||
       !Number.isInteger(state.position)||!Array.isArray(state.plates)||typeof state.powered!=='boolean') return;
   const rows=cageMaps[state.index], tiles=rows.join(''), cols=rows[0].length;
   if(state.position<0||state.position>=tiles.length||tiles[state.position]==='#') return;
   const prior=cageGuest;
+  if(prior&&state.round<prior.round) return;
+  cageRun=Math.max(cageRun,state.round);
   const newCage=prior?.round!==state.round;
   const justOpened=state.open&&prior&&!newCage&&!prior.open;
   const contactChanged=newCage||prior.contact!==state.contact||prior.phase!==state.phase||prior.open!==state.open;
@@ -2981,7 +3001,7 @@ function updateCageView(state) {
   if(newCage||active!==(prior.phase==='play'&&!prior.open)||state.powered!==prior.powered||state.found!==prior.found){
     renderCageMechanism();
   }
-  const notices={paused:'队友暂停了游戏。',caught:'队友被猫抓住了，等待重新开始。',next:'关卡通过。等待队友进入下一关。',win:'到达终点！你们一起回到了墙缝。'};
+  const notices={paused:'队友暂停了游戏。',caught:'队友被猫抓住了，等待重新开始。',next:'通关了！下一关你在笼外，等队友点继续。',win:'到达终点！你们一起回到了墙缝。'};
   const notice=notices[state.phase];
   $('cageNotice').hidden=!notice;
   setText('cageNotice',notice||'');
@@ -2993,8 +3013,8 @@ function moveFromCage(dx,dy) {
 
 
 let lobbyAttempt=0;
-const RTC_PREFIX='M4.';
-const RTC_OLDER_PREFIXES=['M3.','M2.','MOUSE1.'];
+const RTC_PREFIX='M5.';
+const RTC_OLDER_PREFIXES=['M4.','M3.','M2.','MOUSE1.'];
 const RTC_MAX_DESCRIPTION=26000;
 const RTC_SERVERS=[{urls:['stun:stun.l.google.com:19302','stun:stun.cloudflare.com:3478']}];
 
@@ -3159,23 +3179,52 @@ function newPeer(role,id) {
   });
   return room;
 }
+function enterOutsideView(index,swapped=false) {
+  cageRoom.outside=true;
+  cageGuest=null;
+  signalRevision++;
+  finishSqueakReplay();
+  const hadWindow=restoreCageWindow();
+  $('cageScreen').hidden=true;
+  $('endCoop').hidden=false;
+  $('guestConnected').hidden=false;
+  document.body.classList.add('coop-playing');
+  begin(index);
+  if(hadWindow) resize();
+  tell(swapped?'换位了！这关你在笼外，找到奶酪图案，帮队友开门。':'队友被困在笼子里。按 Q 寻找带图案的奶酪。',3.15);
+}
+function enterCageView(swapped=false) {
+  cageRoom.outside=false;
+  cageRound=null;
+  cageGuest=null;
+  mode='guest';
+  pressed.clear();drag=null;unlockPointer();
+  $('menu').hidden=true;$('modal').hidden=true;$('hud').hidden=true;
+  $('cageScreen').hidden=false;
+  $('endCoop').hidden=true;$('guestConnected').hidden=true;
+  document.body.classList.remove('coop-playing');
+  mountCageWindow();
+  setText('cageNotice',swapped?'换位了！这关你在笼内，正在准备迷宫。':'已连接。等待笼外队友开始。');
+  $('cageNotice').hidden=false;
+  sendRoom({type:'ready'});
+}
+function swapToCage() {
+  const index=levelIndex+1;
+  if(mode!=='next'||!coopHost()||!levels[index]) return;
+  if(!cageSnapshot()||!sendRoom({type:'swap',round:cageRound.id,index})){
+    setText('modalCopy','换位消息未送出，请再试一次。');
+    return;
+  }
+  enterCageView(true);
+}
 function beginPairedCage(room) {
   if(cageRoom!==room||room.active) return;
   room.active=true;
+  cageRun=0;
   clearTimeout(room.timer);
   $('coopLobby').hidden=true;$('menu').inert=false;
-  if(room.role==='host'){
-    $('endCoop').hidden=false;$('guestConnected').hidden=false;
-    document.body.classList.add('coop-playing');
-    begin(selectedLevel());
-    tell('队友被困在笼子里。按 Q 寻找带图案的奶酪。',3.15);
-  } else {
-    mode='guest';$('menu').hidden=true;$('hud').hidden=true;$('cageScreen').hidden=false;
-    mountCageWindow();
-    setText('cageNotice','已连接。等待笼外队友开始。');
-    $('cageNotice').hidden=false;
-    sendRoom({type:'ready'});
-  }
+  if(room.role==='host') enterOutsideView(selectedLevel());
+  else enterCageView();
 }
 function receiveRoomPayload(room,raw) {
   if(cageRoom!==room||typeof raw!=='string'||raw.length>3600) return;
@@ -3330,8 +3379,8 @@ function openRoomInviteFromUrl() {
 }
 
 const ROOM_ALPHABET='23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
-const ROOM_ID_PREFIX='mouse-after-dark-m4-';
-const ROOM_LINK_LABEL='mouse-cage-m4';
+const ROOM_ID_PREFIX='mouse-after-dark-m5-';
+const ROOM_LINK_LABEL='mouse-cage-m5';
 const PEER_CLIENT_URL='https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.5.5/peerjs.min.js';
 let peerClientLoading=null;
 
