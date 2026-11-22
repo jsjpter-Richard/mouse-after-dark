@@ -27,6 +27,7 @@ kbd{display:inline-block;min-width:21px;text-align:center;background:#e9e8d31a;b
 #prompt{top:calc(50% + 26px);padding:6px 12px;background:#101916d9;border-radius:4px;border:1px solid #e9d7af43}
 #toast{top:20%;font-weight:700;color:#ffe0a2;letter-spacing:.04em}#alert{position:absolute;top:35px;left:50%;transform:translateX(-50%);width:138px;text-align:center}#alertText{display:block;font-size:11px;margin-bottom:6px;text-shadow:0 1px 7px #000;font-weight:700}.bar{display:block;background:#111e1ae8;border:1px solid #e2ded443;height:6px;overflow:hidden;border-radius:9px}.bar i{display:block;height:100%;width:100%;transform-origin:left;background:#d2d3b6}
 #alertFill{background:#ed996f}.danger #alertFill{background:#ff8462}.danger #alertText{color:#ffc2a9}
+.searching #alertFill{background:#edba6c}.searching #alertText{color:#ffe1a7}
 #abilities{position:absolute;bottom:clamp(14px,2.5vw,33px);left:clamp(12px,2.5vw,35px);right:clamp(12px,2.5vw,35px);display:flex;justify-content:space-between;align-items:flex-end;gap:10px;color:#f4eedc}.ability{padding:8px 10px;background:var(--glass);border:1px solid var(--line);border-radius:5px;font-size:12px;min-width:106px}.ability .bar{margin-top:6px}#staminaFill{background:#b1cab1}#sniffFill{background:#efc87c}#stance{align-self:flex-end;font-size:11px;color:#dfe3d1;text-shadow:0 1px 6px #000;padding-bottom:6px}
 .marker{position:absolute;transform:translate(-50%,-50%);font-size:12px;font-weight:700;color:#ffdc91;text-shadow:0 2px 8px #000;padding:4px 8px;border:1px solid #ffce7480;border-radius:4px;background:#191c14cf;white-space:nowrap}.marker.home{color:#bde6c1;border-color:#a7e7b37a}
 #modal{position:absolute;inset:0;display:grid;place-items:center;background:#091211c7;padding:20px}.dialog{width:min(410px,100%);background:#152320;border:1px solid var(--line);padding:clamp(20px,5vw,38px);border-radius:8px;box-shadow:0 18px 80px #0008}.dialog h2{font-size:clamp(30px,5vw,43px);margin:11px 0}.dialog p{font-size:14px;line-height:1.65;color:#d1d8cb;margin-bottom:20px}.dialog-actions{display:flex;align-items:center;gap:12px;flex-wrap:wrap}.dialog .primary span{margin-left:16px}
@@ -427,6 +428,8 @@ const englishUi={
   "头顶太低，离开矮缝后会自动站起来。": "Low ceiling. You’ll stand up when you clear the gap.",
   "猫发现你了！找柜底或拐角。": "The cat saw you! Get under a cabinet or around a corner.",
   "猫正在追你": "The cat is chasing you",
+  "猫停下听动静": "The cat stopped to listen",
+  "猫正在搜查附近": "The cat is searching nearby",
   "你藏在阴影里": "Hidden in the shadows",
   "猫正在查看动静": "The cat is investigating",
   "数字线索": "Digit Clues",
@@ -498,6 +501,7 @@ const englishUi={
   "门灯亮着 · 举一只爪告诉队友": "Light On · Raise One Paw",
   "门灯熄了 · 举两只爪告诉队友": "Light Off · Raise Two Paws",
   "猫在追你，先离开笼边。": "The cat is chasing you. Get away from the cage first.",
+  "猫正在笼边搜查，等它走远再吱叫。": "The cat is searching near the cage. Wait for it to leave before squeaking.",
   "猫听到了吱声，正在靠近。": "The cat heard the squeaks and is coming closer.",
   "按 E 释放鼠标，再点图案。吱声可能引猫。": "Press E to free the mouse cursor, then click a symbol. Squeaks can draw the cat.",
   "点图案发暗号。吱声可能引猫。": "Tap a symbol to squeak. Squeaks can draw the cat.",
@@ -1295,7 +1299,11 @@ function createLevel(index) {
   const [x,z,yaw]=level.spawn;
   player={x,z,y:0,yaw,pitch:.035,eye:.33,vY:0,stamina:1,stance:false,low:false,ground:true,gait:0,amount:0};
   const [cx,cz]=level.patrol[0], [nx,nz]=level.patrol[1];
-  cat={x:cx,z:cz,yaw:angleTo(nx-cx,nz-cz),alert:0,goal:1,phase:'patrol',memory:0,last:null,trail:[],repath:0,gait:0,speed:0};
+  cat={
+    x:cx,z:cz,yaw:angleTo(nx-cx,nz-cz),alert:0,goal:1,phase:'patrol',
+    memory:0,last:null,seesPlayer:false,lastDirection:null,search:null,
+    trail:[],repath:0,gait:0,speed:0,stepDistance:0
+  };
   setupCat();
   time=0;sniffUntil=0;readyAt=0;toastUntil=0;alertPulse=0;footstep=0;
   $('chapter').textContent='CHAPTER 0'+(index+1);
@@ -1312,7 +1320,7 @@ function createLevel(index) {
   const dots=world.food.map(()=>Object.assign(document.createElement('i'),{className:'pip'}));
   $('progress').replaceChildren(...dots,document.createElement('span'));
   refreshGoal();
-  $('alert').classList.remove('danger');
+  $('alert').classList.remove('danger','searching');
   setText('alertText','猫没发现你');
   $('alertFill').style.transform='scaleX(0)';
   $('prompt').hidden=true;
@@ -1695,7 +1703,66 @@ function navigateCat(target,dt,speed) {
   const x=cat.x+dx*stride/length,z=cat.z+dz*stride/length;
   if(!blocks(x,z,.10,1.04,.47)){
     cat.x=x;cat.z=z;cat.gait+=stride*(cat.phase==='hunt'?3.65:3.05);cat.speed=speed;
+    cat.stepDistance+=stride;
+    if(cat.stepDistance>=.94){
+      cat.stepDistance-=.94;
+      const range=distance(cat,player);
+      if(range<9){
+        const occlusion=clearSight(cat,player,.47,player.y+.18)?1:.48;
+        const volume=.115*(1-range/9)**1.4*occlusion;
+        if(volume>.004) playTone(76,.075,volume,'triangle',35);
+      }
+    }
   }
+}
+function startCatSearch() {
+  const heading=cat.lastDirection??angleTo(cat.last.x-cat.x,cat.last.z-cat.z);
+  const approach=catCanWalkTo(cat.last)?cat.last:pathBetween(cat,cat.last).at(-1)??point(cat.x,cat.z);
+  cat.phase='search';
+  cat.search={stage:'approach',target:approach,heading,until:time+3.2,yaw:cat.yaw};
+}
+function catSearchTarget(heading) {
+  let straight=null;
+  for(const offset of [0,.7,-.7,1.45,-1.45]){
+    const angle=heading+offset;
+    const target=point(cat.x+Math.sin(angle)*2.15,cat.z+Math.cos(angle)*2.15);
+    if(blocks(target.x,target.z,.10,1.04,.50)) continue;
+    if(catCanWalkTo(target)){
+      straight??=target;
+    } else {
+      const path=pathBetween(cat,target);
+      if(path.length>0 && path.length<=8) return path.at(-1);
+    }
+  }
+  return straight;
+}
+function updateCatSearch(dt) {
+  const search=cat.search;
+  if(search.stage==='approach'){
+    if(time<search.until && distance(cat,search.target)>.27){
+      navigateCat(search.target,dt,3.15);return;
+    }
+    search.stage='listen';
+    search.until=time+.95;
+    search.yaw=cat.yaw;
+  }
+  if(search.stage==='listen'){
+    if(time<search.until){
+      const progress=1-(search.until-time)/.95;
+      cat.yaw=search.yaw+Math.sin(progress*TAU)*.56;
+      return;
+    }
+    search.stage='check';
+    search.target=catSearchTarget(search.heading);
+    search.until=time+2.55;
+    cat.repath=0;
+  }
+  if(search.target && time<search.until && distance(cat,search.target)>.27){
+    navigateCat(search.target,dt,2.36);return;
+  }
+  cat.search=null;
+  cat.phase='patrol';
+  cat.repath=0;
 }
 function updateCat(dt,sprint) {
   const patrol=world.level.patrol;
@@ -1703,8 +1770,9 @@ function updateCat(dt,sprint) {
   const near=distance(player,cat), hidden=protectedByCover();
   const front=angleTo(player.x-cat.x,player.z-cat.z);
   const facing=Math.abs(angleDiff(cat.yaw,front));
+  const onTrail=cat.phase==='hunt'||cat.phase==='search';
   const visible=!hidden && near<(player.low?5.4:8.1) &&
-    (facing<(cat.phase==='hunt'?1.35:1.04)||near<1.55) &&
+    (facing<(onTrail?1.35:1.04)||near<1.55) &&
     clearSight(cat,player,1.02,player.y+(player.low?.13:.26));
   const footSound=!hidden && sprint && near<6.5 && clearSight(cat,player,.50,player.y+.13);
   const noise=cageRound?.noise;
@@ -1712,22 +1780,34 @@ function updateCat(dt,sprint) {
   const audible=footSound||heardSqueak;
   const oldPhase=cat.phase;
   if(visible){
+    if(cat.seesPlayer && distance(player,cat.last)>.012){
+      cat.lastDirection=angleTo(player.x-cat.last.x,player.z-cat.last.z);
+    } else if(!cat.seesPlayer&&!onTrail) cat.lastDirection=null;
     cat.alert=clamp(cat.alert+dt*(near<2.2?2.25:player.low?.98:1.46),0,1);
     cat.last=point(player.x,player.z);
     cat.memory=3.25;
   } else {
-    cat.alert=Math.max(0,cat.alert-dt*(cat.phase==='hunt'?.15:.46));
+    cat.alert=Math.max(0,cat.alert-dt*(onTrail?.15:.46));
     cat.memory=Math.max(0,cat.memory-dt);
   }
-  if(audible&&cat.phase!=='hunt'){
+  cat.seesPlayer=visible;
+  if(audible&&oldPhase!=='hunt'){
     cat.alert=Math.max(cat.alert,heardSqueak?.60:.38);
     if(heardSqueak) noise.noticed=true;
-    cat.last=heardSqueak?point(noise.x,noise.z):point(player.x,player.z);
-    cat.memory=heardSqueak?3.0:2.1;
+    if(!visible){
+      cat.last=heardSqueak?point(noise.x,noise.z):point(player.x,player.z);
+      cat.memory=heardSqueak?3.0:2.1;
+    }
   }
-  if(cat.alert>=.98) cat.phase='hunt';
-  else if(cat.phase==='hunt' && cat.memory<=0) cat.phase='patrol';
-  else if(cat.phase!=='hunt') cat.phase=cat.memory>0?'investigate':'patrol';
+  if(oldPhase==='hunt'){
+    if(!visible && cat.memory<=3) startCatSearch();
+  } else if(oldPhase==='search'){
+    if(visible) cat.phase='hunt';
+    else if(audible) cat.phase='investigate';
+    if(cat.phase!=='search') cat.search=null;
+  } else {
+    cat.phase=cat.alert>=.98?'hunt':cat.memory>0?'investigate':'patrol';
+  }
   if(oldPhase!==cat.phase){
     cat.repath=0;
     if(cat.phase==='hunt') {
@@ -1736,22 +1816,29 @@ function updateCat(dt,sprint) {
       tell('猫发现你了！找柜底或拐角。',1.65);
     }
   }
-  let target=cat.last;
-  if(cat.phase==='patrol'){
-    target=point(...patrol[cat.goal]);
-    if(distance(cat,target)<.55){
-      cat.goal=(cat.goal+1)%patrol.length;target=point(...patrol[cat.goal]);cat.repath=0;
-    }
-  }
   cat.speed=0;
-  const speed=cat.phase==='hunt'?(levelIndex===0?4.52:4.85):cat.phase==='investigate'?2.31:1.72;
-  if(target && distance(cat,target)>.25) navigateCat(target,dt,speed);
-  else if(cat.phase!=='patrol') cat.yaw+=dt*1.95;
+  if(cat.phase==='search') updateCatSearch(dt);
+  else {
+    let target=cat.last;
+    if(cat.phase==='patrol'){
+      target=point(...patrol[cat.goal]);
+      if(distance(cat,target)<.55){
+        cat.goal=(cat.goal+1)%patrol.length;target=point(...patrol[cat.goal]);cat.repath=0;
+      }
+    }
+    const speed=cat.phase==='hunt'?(levelIndex===0?4.52:4.85):cat.phase==='investigate'?2.31:1.72;
+    if(target && distance(cat,target)>.25) navigateCat(target,dt,speed);
+    else if(cat.phase!=='patrol') cat.yaw+=dt*1.95;
+  }
   if(!hidden && distance(player,cat)<.73 && player.y<.82 && clearSight(cat,player,.50,player.y+.15)) {
     showModal('caught');return;
   }
   $('alert').classList.toggle('danger',cat.phase==='hunt');
-  setText('alertText',cat.phase==='hunt'?'猫正在追你':hidden?'你藏在阴影里':cat.phase==='investigate'?'猫正在查看动静':'猫没发现你');
+  $('alert').classList.toggle('searching',cat.phase==='search');
+  const status=cat.phase==='hunt'?'猫正在追你':
+    cat.phase==='search'?(cat.search.stage==='listen'?'猫停下听动静':'猫正在搜查附近'):
+    hidden?'你藏在阴影里':cat.phase==='investigate'?'猫正在查看动静':'猫没发现你';
+  setText('alertText',status);
   $('alertFill').style.transform='scaleX('+cat.alert.toFixed(2)+')';
 }
 function setText(id,text) {
@@ -2278,11 +2365,15 @@ function cageHostHint() {
     setText('cageLampText',cageRound.lightOn?'门灯亮着 · 举一只爪告诉队友':'门灯熄了 · 举两只爪告诉队友');
     const left=Math.max(0,cageRound.signalUntil-time);
     const heard=cat.phase==='investigate'&&cageRound.noise?.noticed&&time<cageRound.noise.until+2.4;
-    const danger=cat.phase==='hunt'||heard;
+    const searching=cat.phase==='search'&&distance(cat,world.home)<5;
+    const danger=cat.phase==='hunt'||heard||searching;
     const panel=$('coopSignals');
     const dangerState=String(Boolean(danger));
     if(panel.dataset.danger!==dangerState) panel.dataset.danger=dangerState;
-    const status=cat.phase==='hunt'?'猫在追你，先离开笼边。':heard?'猫听到了吱声，正在靠近。':left>0?'等 '+(Math.ceil(left*10)/10).toFixed(1)+' 秒再发下一串。':(document.pointerLockElement===canvas?'按 E 释放鼠标，再点图案。吱声可能引猫。':'点图案发暗号。吱声可能引猫。');
+    const status=cat.phase==='hunt'?'猫在追你，先离开笼边。':
+      searching?'猫正在笼边搜查，等它走远再吱叫。':heard?'猫听到了吱声，正在靠近。':
+      left>0?'等 '+(Math.ceil(left*10)/10).toFixed(1)+' 秒再发下一串。':
+      document.pointerLockElement===canvas?'按 E 释放鼠标，再点图案。吱声可能引猫。':'点图案发暗号。吱声可能引猫。';
     setText('cageSignalStatus',status);
     for(const button of $('coopSignalButtons').children) {
       const sign=Number(button.dataset.count)-1;
