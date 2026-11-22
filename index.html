@@ -117,6 +117,13 @@ kbd{display:inline-block;min-width:21px;text-align:center;background:#e9e8d31a;b
 .lamp-option{display:flex;gap:6px;align-items:center;min-height:36px;padding:5px 9px;border:1px solid #aebb9d62;border-radius:5px;color:#dddcc8;font-size:12px;cursor:pointer}
 .lamp-option:has(input:checked){border-color:#efc27c;background:#51462e;color:#ffe4a6}
 .lamp-option input{accent-color:#f2c47d}
+#coopSignalButtons .utility.guided-signal,
+#cageLamp[data-lamp-cue="lit"] .lamp-option:has(input[value="lit"]),
+#cageLamp[data-lamp-cue="dark"] .lamp-option:has(input[value="dark"]){
+  border-color:#ffcf81;background:#524329;color:#fff1cb;box-shadow:0 0 0 1px #ffcf8160
+}
+#cageLampLesson{color:#f4d598}
+#cageLampLesson[data-matched="true"]{color:#bfe1ba}
 .lamp-bulb{width:9px;height:9px;border-radius:50%;background:#eac174;box-shadow:0 0 7px #eac1748a}
 .lamp-bulb.off{background:#778277;box-shadow:none}
 .latch-buttons{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px;margin:9px 0}
@@ -295,7 +302,8 @@ html[lang=en] #coopLobby{align-items:safe center}
           <form id="cageForm" class="cage-mechanism">
             <fieldset id="cageLamp" class="mechanism-step">
               <legend>灯的拨杆</legend>
-              <p>门灯在笼外。看队友举爪，把拨杆拨到和门灯一样的状态。</p>
+              <p id="cageLampHelp">门灯在笼外。看队友举爪，把拨杆拨到和门灯一样的状态。</p>
+              <p id="cageLampLesson" role="status" hidden></p>
               <div class="lamp-choices">
                 <label class="lamp-option"><input name="lamp" type="radio" value="lit"><i class="lamp-bulb" aria-hidden="true"></i>灯亮</label>
                 <label class="lamp-option"><input name="lamp" type="radio" value="dark"><i class="lamp-bulb off" aria-hidden="true"></i>灯灭</label>
@@ -324,6 +332,13 @@ html[lang=en] #coopLobby{align-items:safe center}
 'use strict';
 const $ = id => document.getElementById(id);
 const englishUi={
+  "先发亮起的举爪暗号。": "Send the highlighted paw signal first.",
+  "门灯暗号已发出 · 接着用吱声传图案": "Light signal sent · Squeak to send the symbols next",
+  "等队友举爪，再把拨杆拨到相同的灯状态。": "Wait for your partner to raise their paws, then match the switch to the signal.",
+  "队友举了一只爪。请点亮起的「灯亮」。": "Your partner raised one paw. Select the highlighted Light On option.",
+  "队友举了两只爪。请点亮起的「灯灭」。": "Your partner raised two paws. Select the highlighted Light Off option.",
+  "拨杆和暗号对上了。踩金色踏板给扣件通电。": "The switch matches the signal. Step on the gold plate to power the latches.",
+  "拨杆和暗号对上了。接着听吱声，按顺序扳图案扣件。": "The switch matches the signal. Listen to the squeaks and pull the symbol latches in order.",
   "下一关交换角色。你在笼内，队友在笼外。": "You will swap roles next level. You will be inside the cage and your partner will be outside.",
   "换位并开始下一关": "Swap Roles and Continue",
   "通关了！下一关你在笼外，等队友点继续。": "Level complete! You are outside next. Wait for your partner to continue.",
@@ -2463,7 +2478,7 @@ const cageSignCount=index=>Math.min(index+2,3);
 let cageRoom=null, cageRound=null, cageGuest=null, cageRun=0, signalRevision=0;
 const cageLatches=[];
 const coopHost=()=>cageRoom?.active && (cageRoom.outside??(cageRoom.role==='host'));
-const cageInbox={serial:0,playing:null,nextReplyAt:0};
+const cageInbox={serial:0,playing:null,nextReplyAt:0,lampCue:null};
 const cageReplies=new Map([
   ['repeat',{host:'队友请你再传一次暗号。',guest:'已请队友再传一次。'}],
   ['confirm',{host:'队友收到了你的暗号。',guest:'已告诉队友你收到了。'}]
@@ -2607,7 +2622,13 @@ function cageHostHint() {
   }
   $('coopSignals').hidden=!near;
   if(near) {
-    setText('cageLampText',cageRound.lightOn?'门灯亮着 · 举一只爪告诉队友':'门灯熄了 · 举两只爪告诉队友');
+    const firstLevel=levelIndex===0;
+    const lampPaws=cageRound.lightOn?1:2;
+    const lampSent=cageRound.pawCount===lampPaws;
+    const guidePaw=firstLevel&&!lampSent;
+    const lampText=firstLevel&&lampSent?'门灯暗号已发出 · 接着用吱声传图案':
+      cageRound.lightOn?'门灯亮着 · 举一只爪告诉队友':'门灯熄了 · 举两只爪告诉队友';
+    setText('cageLampText',lampText);
     const left=Math.max(0,cageRound.signalUntil-time);
     const heard=cat.phase==='investigate'&&cageRound.noise?.noticed&&time<cageRound.noise.until+2.4;
     const searching=cat.phase==='search'&&distance(cat,world.home)<5;
@@ -2618,6 +2639,7 @@ function cageHostHint() {
     const status=cat.phase==='hunt'?'猫在追你，先离开笼边。':
       searching?'猫正在笼边搜查，等它走远再吱叫。':heard?'猫听到了吱声，正在靠近。':
       left>0?'等 '+(Math.ceil(left*10)/10).toFixed(1)+' 秒再发下一串。':
+      guidePaw?'先发亮起的举爪暗号。':
       document.pointerLockElement===canvas?'按 E 释放鼠标，再点图案。吱声可能引猫。':'点图案发暗号。吱声可能引猫。';
     setText('cageSignalStatus',status);
     for(const button of $('coopSignalButtons').children) {
@@ -2625,6 +2647,7 @@ function cageHostHint() {
       const unavailable=button.dataset.kind==='voice'&&!world.food.some(food=>food.sign===sign&&food.found);
       const disabled=left>0||unavailable;
       if(button.disabled!==disabled) button.disabled=disabled;
+      button.classList.toggle('guided-signal',guidePaw&&button.dataset.kind==='gesture'&&sign+1===lampPaws);
     }
     $('cageReplyText').hidden=!cageRound.reply;
     setText('cageReplyText',cageRound.reply?.host||'');
@@ -2889,6 +2912,10 @@ function displayCageSignal(kind,count) {
   if(kind==='gesture'&&(count===1||count===2)){
     drawSignalMouse(count);
     setText('signalText',count===1?'一只爪 · 把拨杆拨到灯亮':'两只爪 · 把拨杆拨到灯灭');
+    if(cageGuest?.index===0&&cageGuest.phase==='play'&&!cageGuest.open){
+      cageInbox.lampCue=count===1?'lit':'dark';
+      renderCageMechanism();
+    }
     return;
   }
   if(kind!=='voice'||!Number.isInteger(count)||!cheeseSigns[count-1]) return;
@@ -2918,12 +2945,30 @@ function displayCageSignal(kind,count) {
   $('squeakEmpty').hidden=true;
   replaySqueaks(cue);
 }
+function renderLampLesson(state,choice) {
+  const active=state?.index===0&&state.phase==='play'&&!state.open;
+  const cue=active?cageInbox.lampCue:null;
+  const matched=Boolean(cue&&choice===cue);
+  const lesson=$('cageLampLesson');
+  $('cageLamp').dataset.lampCue=cue&&!matched?cue:'';
+  $('cageLampHelp').hidden=active;
+  lesson.hidden=!active;
+  lesson.dataset.matched=String(matched);
+  if(!active) return;
+  const text=matched?(state.powered?'拨杆和暗号对上了。接着听吱声，按顺序扳图案扣件。':
+      '拨杆和暗号对上了。踩金色踏板给扣件通电。'):
+    cue==='lit'?'队友举了一只爪。请点亮起的「灯亮」。':
+    cue==='dark'?'队友举了两只爪。请点亮起的「灯灭」。':
+    '等队友举爪，再把拨杆拨到相同的灯状态。';
+  setText('cageLampLesson',text);
+}
 function renderCageMechanism() {
   const state=cageGuest;
   const active=state?.phase==='play'&&!state.open;
   const powered=active&&state.powered;
   const limit=state?cageSignCount(state.index):0;
   const lamp=$('cageLamp').querySelector('input:checked');
+  renderLampLesson(state,lamp?.value);
   const enoughCheese=state?.found===limit;
   $('cageLamp').disabled=!active;
   for(const [sign,button] of Array.from($('cageLatchButtons').children).entries()){
@@ -2956,7 +3001,7 @@ function updateCageView(state) {
   if(newCage) {
     signalRevision++;
     finishSqueakReplay();
-    cageInbox.serial=0;cageInbox.nextReplyAt=0;
+    cageInbox.serial=0;cageInbox.nextReplyAt=0;cageInbox.lampCue=null;
     $('cageForm').reset();
     cageLatches.length=0;
     $('squeakHistory').replaceChildren();
@@ -3203,6 +3248,7 @@ function enterCageView(swapped=false) {
   $('cageScreen').hidden=false;
   $('endCoop').hidden=true;$('guestConnected').hidden=true;
   document.body.classList.remove('coop-playing');
+  renderLampLesson(null);
   mountCageWindow();
   setText('cageNotice',swapped?'换位了！这关你在笼内，正在准备迷宫。':'已连接。等待笼外队友开始。');
   $('cageNotice').hidden=false;
