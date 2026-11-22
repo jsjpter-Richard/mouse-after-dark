@@ -38,10 +38,14 @@ kbd{display:inline-block;min-width:21px;text-align:center;background:#e9e8d31a;b
 
 #clues{display:flex;align-items:center;gap:8px;font-size:11px;color:#e7dac1}
 #clueDigits{color:var(--amber);font:700 13px ui-monospace,monospace;letter-spacing:.16em}
+#clues.food-notebook{display:grid;gap:3px}
+#clues.food-notebook #clueDigits{font:650 12px/1.45 system-ui,sans-serif;letter-spacing:0}
 #lockPrompt{position:absolute;left:50%;top:calc(50% + 26px);transform:translateX(-50%);padding:6px 12px;min-height:42px;pointer-events:auto;background:#101916ed;border:1px solid #f2c47d95;border-radius:4px;color:var(--amber);font-size:13px;white-space:nowrap}
 #lockPrompt:hover{background:#29352b}#lockPrompt kbd{margin-right:5px}
 #lockScreen{position:absolute;inset:0;display:grid;place-items:center;background:#091211c7;padding:18px;overflow:auto}
 #lockScreen .dialog{border-color:#d3a96b75}
+#lockFoodClue{margin:-8px 0 3px;padding:8px 10px;background:#352b21;border-left:2px solid var(--amber);color:#ffda9b;font-weight:700}
+#lockFoodNotes{margin:0 0 14px;padding:0 10px;color:#dfd5bc;font-size:12px}
 #lockForm label{display:block;color:#e9d9b8;font-size:12px;margin-bottom:6px}
 #lockCode{width:100%;height:52px;padding:6px 14px;color:var(--amber);background:#0d1714;border:1px solid #d3a96b75;border-radius:5px;font:700 24px ui-monospace,monospace;letter-spacing:.42em}
 #lockCode:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
@@ -204,9 +208,10 @@ html[lang=en] #coopLobby{align-items:safe center}
     <div class="stamp" id="lockChapter"></div>
     <h2 id="lockTitle">墙洞密码锁</h2>
     <p id="lockInstructions">这三个数字各用一次。换个顺序，试到锁打开为止。</p>
+    <p id="lockFoodClue" hidden></p><p id="lockFoodNotes" hidden></p>
     <form id="lockForm" novalidate>
       <label for="lockCode">输入三位密码</label>
-      <input id="lockCode" type="text" inputmode="numeric" maxlength="3" autocomplete="off" spellcheck="false" placeholder="···" aria-describedby="lockInstructions">
+      <input id="lockCode" type="text" inputmode="numeric" maxlength="3" autocomplete="off" spellcheck="false" placeholder="···" aria-describedby="lockInstructions lockFoodClue lockFoodNotes">
       <div id="lockKeys" aria-label="收集到的数字"></div>
       <p id="lockStatus" role="status"></p>
       <p id="lockHistory" hidden></p>
@@ -332,6 +337,11 @@ html[lang=en] #coopLobby{align-items:safe center}
 'use strict';
 const $ = id => document.getElementById(id);
 const englishUi={
+  "食物笔记": "Food Notes",
+  "收集食物上的数字。锁旁的图案提示第一位。": "Collect the digits on the food. The carving by the lock hints at the first digit.",
+  "数字齐了。去墙洞看图案，找出第一位。": "You have all three digits. Check the carving by the mouse hole for the first digit.",
+  "图案对应的食物给出第一位。试试剩下两个数字的顺序。": "Use the digit from the food shown in the carving first. Try the two possible orders for the other digits.",
+  "第一位不对。看看墙上的图案对应哪份食物。": "The first digit is incorrect. Match the carving to the food it depicts.",
   "先发亮起的举爪暗号。": "Send the highlighted paw signal first.",
   "门灯暗号已发出 · 接着用吱声传图案": "Light signal sent · Squeak to send the symbols next",
   "等队友举爪，再把拨杆拨到相同的灯状态。": "Wait for your partner to raise their paws, then match the switch to the signal.",
@@ -676,6 +686,8 @@ const englishSigns=text=>text.replace(/月亮|叶子|水滴|星星|？/g,sign=>e
 const englishFormats=[
   [/^(月亮|叶子|水滴|星星)奶酪$/,(_,sign)=>englishUi[sign]+' Cheese'],
   [/^已找到 (\d+) 份食物$/,(_,n)=>'Food collected: '+n],
+  [/^墙上刻着「(.+)」。$/,(_,food)=>'Carved into the wall: '+englishUi[food]+'.'],
+  [/^(?:(?:面包屑|奶酪|饼干屑) \d(?: · |$))+$/,line=>line.replace(/面包屑|奶酪|饼干屑/g,food=>englishUi[food])],
   [/^试过的顺序　(.+)$/,(_,codes)=>'Orders tried: '+codes],
   [/^找到「(.+)」，排在(.+)。$/,(_,sign,position)=>'Found '+englishUi[sign]+'. It goes '+englishUi[position]+'.'],
   [/^捡到(.+)，获得数字 (\d)。$/,(_,food,digit)=>'Picked up '+englishUi[food]+' and found digit '+digit+'.'],
@@ -1035,6 +1047,46 @@ function pipe(x,z,y,height,color='a28362') {
   place('tube',color,x,y,z,.13,height,.13);
   for(const shift of [-.4,.17,.38]) place('tube','4f5250',x,y+height*shift,z,.17,.10,.17);
 }
+const denFoodCarvings={
+  '面包屑':[
+    '...###...',
+    '..#...#..',
+    '.#.....#.',
+    '.#.....#.',
+    '..#...#..',
+    '..#...#..',
+    '..#####..'
+  ],
+  '奶酪':[
+    '......##.',
+    '....##.#.',
+    '..##...#.',
+    '.#..#..#.',
+    '.#.....#.',
+    '.#.#...#.',
+    '.#######.'
+  ],
+  '饼干屑':[
+    '...###...',
+    '..#...#..',
+    '.#.#...#.',
+    '.#...#.#.',
+    '.#..#..#.',
+    '..#...#..',
+    '...###...'
+  ]
+};
+function carveLockClue(x,z,name) {
+  const plaqueX=x-.76, plaqueY=.45;
+  box('795638',plaqueX,plaqueY,z-.23,.48,.405,.055,{material:2});
+  box('cd9f68',plaqueX,plaqueY,z-.262,.435,.359,.012,{material:2,glow:.20});
+  const rows=denFoodCarvings[name];
+  for(const [row,marks] of rows.entries()){
+    for(const [column,mark] of [...marks].entries()){
+      if(mark==='#') box('514034',plaqueX+(column-4)*.039,plaqueY+(3-row)*.039,z-.271,.042,.042,.012,{glow:.22});
+    }
+  }
+}
 function den(x,z) {
   const front=z-.09;
   // Stepped lintel pieces leave a real opening at the bobbing camera's height.
@@ -1047,6 +1099,7 @@ function den(x,z) {
   box('343d38',x+.49,.38,z-.24,.20,.24,.09);
   box('6d6a56',x+.49,.38,z-.292,.146,.177,.029);
   for(const dx of [-.038,0,.038]) box('343d38',x+.49+dx,.347,z-.311,.025,.035,.014);
+  if(world.lock.firstFood) carveLockClue(x,z,world.lock.firstFood);
   world.lock.barrier=obstacle(x,.25,z-.17,.68,.50,.11);
   box('29281c',x,.25,z+.34,1.0,.51,.06);
   box('ad9163',x,.028,z-.08,1.02,.044,.64,{material:2});
@@ -1446,7 +1499,9 @@ function createLevel(index) {
   cageRound=coopHost()?newCageRound(index):null;
   const digits=shuffle('0123456789').slice(0,level.food.length);
   const food=cageRound?cageFood(level):level.food.map(([x,z,name,color,y=0],i)=>({x,y,z,name,color,digit:digits[i],found:false}));
-  const lock={answer:cageRound?'':shuffle(digits).join(''),failed:new Set(),openedAt:null};
+  const answer=cageRound?'':shuffle(digits).join('');
+  const firstFood=index===0&&!cageRoom?.active?food.find(item=>item.digit===answer[0]).name:null;
+  const lock={answer,firstFood,failed:new Set(),openedAt:null};
   world={level,shapes:[],obstacles:[],climbs:[],water:null,dryCheckpoint:null,checkpoint:null,food,lock,home:point(...level.home)};
   environment(level);
   levelScenes[level.scene]();
@@ -2085,6 +2140,9 @@ function tell(text,duration=2.25) {
 function collectedDigits() {
   return world.food.filter(item=>item.found).map(item=>item.digit).sort();
 }
+function foodNotebook() {
+  return world.food.filter(food=>food.found).map(food=>food.name+' '+food.digit).join(' · ');
+}
 function refreshGoal() {
   const found=world.food.filter(food=>food.found).length;
   const complete=found===world.food.length;
@@ -2092,11 +2150,16 @@ function refreshGoal() {
   $('progress').lastElementChild.textContent=found+' / '+world.food.length;
   $('progress').setAttribute('aria-label',ui('已找到 '+found+' 份食物'));
   for(let i=0;i<found;i++) $('progress').children[i].classList.add('filled');
+  const hasCarving=Boolean(world.lock.firstFood);
+  $('clues').classList.toggle('food-notebook',hasCarving);
   if(coopHost()) cageHostHud();
   else {
-    setText('clueHeading','数字线索');
-    setText('task',open?'锁开了，钻进墙洞。':complete?'数字齐了，去墙洞试密码。':world.level.intro);
-    setText('clueDigits',collectedDigits().join(' · ')||'—');
+    setText('clueHeading',hasCarving?'食物笔记':'数字线索');
+    const task=open?'锁开了，钻进墙洞。':
+      hasCarving?(complete?'数字齐了。去墙洞看图案，找出第一位。':'收集食物上的数字。锁旁的图案提示第一位。'):
+      complete?'数字齐了，去墙洞试密码。':world.level.intro;
+    setText('task',task);
+    setText('clueDigits',(hasCarving?foodNotebook():collectedDigits().join(' · '))||'—');
   }
 }
 function nearLockedDen() {
@@ -2119,6 +2182,12 @@ function openDenLock() {
   $('hud').inert=true;
   $('lockScreen').hidden=false;
   setText('lockChapter',world.level.title);
+  const carving=world.lock.firstFood;
+  setText('lockInstructions',carving?'图案对应的食物给出第一位。试试剩下两个数字的顺序。':'这三个数字各用一次。换个顺序，试到锁打开为止。');
+  $('lockFoodClue').hidden=!carving;
+  $('lockFoodNotes').hidden=!carving;
+  setText('lockFoodClue',carving?'墙上刻着「'+carving+'」。':'');
+  setText('lockFoodNotes',carving?foodNotebook():'');
   const input=$('lockCode');
   input.value='';
   lockFeedback();
@@ -2160,7 +2229,8 @@ function tryDenCode(event) {
     const repeat=world.lock.failed.has(guess);
     world.lock.failed.add(guess);
     renderLockHistory();
-    lockFeedback(repeat?'这个顺序试过了，换一个。':'顺序不对，换个排列再试。');
+    const firstWrong=world.lock.firstFood&&guess[0]!==world.lock.answer[0];
+    lockFeedback(repeat?'这个顺序试过了，换一个。':firstWrong?'第一位不对。看看墙上的图案对应哪份食物。':'顺序不对，换个排列再试。');
     input.value='';
     if(!matchMedia('(pointer:coarse)').matches) input.focus({preventScroll:true});
     playTone(163,.18,.08,'triangle',94);
