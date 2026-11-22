@@ -159,9 +159,10 @@ html[lang=en] #coopLobby{align-items:safe center}
 
 .level-picker{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-top:12px;font-size:13px;color:#d7d7cb}
 .level-picker select{max-width:100%;min-height:34px;padding:4px 8px;border:1px solid var(--line);border-radius:5px;background:#14211d;color:var(--paper);font:inherit}
-#climbPrompt{position:absolute;left:50%;top:calc(50% + 26px);transform:translateX(-50%);min-height:42px;padding:6px 12px;pointer-events:auto;background:#101916ed;border:1px solid #f2c47d95;border-radius:4px;color:var(--amber);font-size:13px;white-space:nowrap}
-#climbPrompt kbd{margin-right:5px}
-@media(pointer:coarse){#climbPrompt kbd{display:none}}
+#climbPrompt,#pushCanPrompt{position:absolute;left:50%;top:calc(50% + 26px);transform:translateX(-50%);min-height:42px;padding:6px 12px;pointer-events:auto;background:#101916ed;border:1px solid #f2c47d95;border-radius:4px;color:var(--amber);font-size:13px;white-space:nowrap}
+#climbPrompt:not([hidden])+#pushCanPrompt{top:calc(50% + 74px)}
+#climbPrompt kbd,#pushCanPrompt kbd{margin-right:5px}
+@media(pointer:coarse){#climbPrompt kbd,#pushCanPrompt kbd{display:none}}
 
 </style>
 </head>
@@ -184,7 +185,7 @@ html[lang=en] #coopLobby{align-items:safe center}
   <header><span class="chapter" id="chapter"></span><strong id="levelName"></strong><span id="task"></span><div id="progress"></div><div id="clues"><span id="clueHeading">数字线索</span><span id="clueDigits"></span></div><span id="guestConnected" hidden>联机 · 笼外</span></header>
   <div id="tools"><button id="audio" class="utility" aria-label="切换音效" aria-pressed="true">音效 开</button><button id="pause" class="utility">暂停</button><button id="endCoop" class="utility" hidden>退出联机</button></div>
   <div id="alert"><span id="alertText">猫没发现你</span><span class="bar"><i id="alertFill"></i></span></div>
-  <span id="crosshair"></span><p id="prompt" hidden></p><button id="lockPrompt" type="button" hidden><kbd>E</kbd> 打开密码锁</button><button id="climbPrompt" type="button" hidden><kbd>F</kbd><span id="climbAction">抓住爬架</span></button><p id="toast" role="status" hidden></p>
+  <span id="crosshair"></span><p id="prompt" hidden></p><button id="lockPrompt" type="button" hidden><kbd>E</kbd> 打开密码锁</button><button id="climbPrompt" type="button" hidden><kbd>F</kbd><span id="climbAction">抓住爬架</span></button><button id="pushCanPrompt" type="button" hidden><kbd>E</kbd><span>推下空罐头</span></button><p id="toast" role="status" hidden></p>
   <div id="markers"></div>
   <div id="coopSignals" hidden>
     <strong id="cageLampText"></strong>
@@ -343,6 +344,9 @@ const englishUi={
   "按住前进键往上爬，后退键往下爬": "Hold Forward to climb up, Back to climb down",
   "在爬架上": "On the ladder",
   "高处安全 · 猫在下面": "Safe up high · The cat is below",
+  "推下空罐头": "Push the Empty Can",
+  "等猫走向罐头，再下梯。": "Wait for the cat to head to the can, then climb down.",
+  "猫正在查看罐头": "The cat is checking the can",
   "食物笔记": "Food Notes",
   "收集食物上的数字。锁旁的图案提示第一位。": "Collect the digits on the food. The carving by the lock hints at the first digit.",
   "数字齐了。去墙洞看图案，找出第一位。": "You have all three digits. Check the carving by the mouse hole for the first digit.",
@@ -1274,6 +1278,7 @@ function sinkRoom() {
   solid('647d7e',x,top*.5,14.46,3.76,top,1.92,{material:2});
   for(let i=0;i<6;i++) box('b0c4bf',x+.85+i*.12,top+.006,14.49,.033,.013,1.64);
   climbRail(x,15.42,0,top,-1,true);
+  world.can={x:-1.34,y:top,z:14.38,edgeX:x+3.76/2,landing:point(.76,12.96),pushedAt:null,landed:false,remoteElapsed:null};
 
   const tap=x-1.66;
   place('tube','87a6a7',tap,1.97,11.57,.22,1.11,.23,{glow:.17});
@@ -1530,7 +1535,7 @@ function createLevel(index) {
   const [cx,cz]=level.patrol[0], [nx,nz]=level.patrol[1];
   cat={
     x:cx,z:cz,yaw:angleTo(nx-cx,nz-cz),alert:0,goal:1,phase:'patrol',
-    memory:0,last:null,seesPlayer:false,lastDirection:null,search:null,
+    memory:0,last:null,seesPlayer:false,lastDirection:null,search:null,distraction:null,
     trail:[],repath:0,gait:0,speed:0,stepDistance:0,patrolStall:0
   };
   setupCat();
@@ -1555,6 +1560,7 @@ function createLevel(index) {
   $('prompt').hidden=true;
   $('lockPrompt').hidden=true;
   $('climbPrompt').hidden=true;
+  $('pushCanPrompt').hidden=true;
   $('coopSignals').hidden=true;
   $('toast').hidden=true;
 }
@@ -1669,6 +1675,27 @@ function drawWater(filmTime) {
     draw(element('box',i%3===0?'81c5cc':'4895aa',x,water.y+.004,z,width,.007,.016,{glow:.57}));
   }
 }
+const CAN_DROP_START=.28, CAN_IMPACT=.84, CAN_SETTLED=1.34;
+function drawCan(inCage) {
+  const can=world.can;
+  if(!can) return;
+  const elapsed=inCage?(can.remoteElapsed??0):(can.pushedAt===null?0:time-can.pushedAt);
+  const push=clamp(elapsed/CAN_DROP_START,0,1);
+  const fall=clamp((elapsed-CAN_DROP_START)/(CAN_IMPACT-CAN_DROP_START),0,1);
+  const roll=clamp((elapsed-CAN_IMPACT)/(CAN_SETTLED-CAN_IMPACT),0,1);
+  const lip=can.edgeX+.14;
+  const x=mix(mix(can.x,lip,push),can.landing.x-.27,fall)+.27*roll;
+  const z=mix(can.z,can.landing.z+.25,fall)-.25*roll;
+  const y=mix(can.y+.18,.15,fall*fall)+.13*Math.sin(Math.PI*roll)*(1-roll);
+  const pitch=mix(push*.25,Math.PI/2,fall)+.21*Math.sin(Math.PI*roll);
+  const part=(color,offset,diameter,height,glow=0)=>draw(element('tube',color,x,y+Math.cos(pitch)*offset,z+Math.sin(pitch)*offset,
+    diameter,height,diameter,{pitch,glow}));
+  part('aa4c32',0,.276,.34,.10);
+  part('e1bc76',.013,.280,.16,.17);
+  part('adb6b6',-.158,.291,.024,.17);
+  part('aeb6ad',.162,.291,.032,.22);
+  part('464745',.179,.232,.008);
+}
 function drawDenLock() {
   const {x,z}=world.home;
   const open=world.lock.openedAt!==null;
@@ -1707,6 +1734,7 @@ function render(dt, filmTime) {
   }
   for(const shape of world.shapes) draw(shape);
   drawWater(filmTime);
+  drawCan(inCage);
   if(inCage){
     drawCageGrate(world.home.x,world.home.z,cageGuest.open?.58:0);
     if(cageWindowPose) drawCageGuestMouse(cageWindowPose,filmTime);
@@ -1847,6 +1875,31 @@ function nearbyClimb() {
     if(!rail.downOnly&&near(rail.lower)) return {rail,up:true};
   }
   return null;
+}
+function nearbyCan() {
+  const can=world.can;
+  return can && can.pushedAt===null && player.ground && Math.abs(player.y-can.y)<.18 && distance(player,can)<1.07;
+}
+function pushCan() {
+  if(mode!=='play'||!nearbyCan()) return false;
+  world.can.pushedAt=time;
+  $('pushCanPrompt').hidden=true;
+  playTone(310,.095,.09,'triangle',187);
+  return true;
+}
+function playCanImpact() {
+  playTone(184,.22,.14,'triangle',79);
+  playTone(932,.16,.095,'square',401);
+  playTone(1577,.15,.08,'triangle',552);
+}
+function updateCan() {
+  const can=world.can;
+  if(!can||can.pushedAt===null||can.landed||time-can.pushedAt<CAN_IMPACT) return;
+  can.landed=true;
+  cat.distraction={target:can.landing,until:time+8.5,checking:false};
+  cat.repath=0;
+  playCanImpact();
+  if(player.y>=CAT_SAFE_HEIGHT) tell('等猫走向罐头，再下梯。',2.8);
 }
 function startClimbing() {
   if(mode!=='play') return;
@@ -2073,6 +2126,21 @@ function updateCatSearch(dt) {
   cat.phase='patrol';
   cat.repath=0;
 }
+function followCanNoise(visible) {
+  const distraction=cat.distraction;
+  if(!distraction) return false;
+  if(visible||time>=distraction.until){
+    cat.distraction=null;
+    if(!visible) cat.memory=0;
+    return false;
+  }
+  if(!distraction.checking&&distance(cat,distraction.target)<.42){
+    distraction.checking=true;
+    distraction.until=time+4.8;
+  }
+  cat.last=distraction.target;
+  return true;
+}
 function updateCat(dt,sprint) {
   const patrol=world.level.patrol;
   if(!world.grid) buildCatGrid();
@@ -2085,6 +2153,7 @@ function updateCat(dt,sprint) {
   const visible=!aboveCat && !hidden && near<(player.low?5.4:8.1) &&
     (facing<(onTrail?1.35:1.04)||near<1.55) &&
     clearSight(cat,player,1.02,player.y+(player.low?.13:.26));
+  const distracted=followCanNoise(visible);
   const footSound=!aboveCat && !hidden && sprint && near<6.5 && clearSight(cat,player,.50,player.y+.13);
   const noise=cageRound?.noise;
   const heardSqueak=noise&&time<noise.until&&distance(noise,cat)<9.2&&clearSight(cat,noise,.58,.26);
@@ -2102,7 +2171,7 @@ function updateCat(dt,sprint) {
     cat.memory=Math.max(0,cat.memory-dt);
   }
   cat.seesPlayer=visible;
-  if(audible&&oldPhase!=='hunt'){
+  if(!distracted&&audible&&oldPhase!=='hunt'){
     cat.alert=Math.max(cat.alert,heardSqueak?.60:.38);
     if(heardSqueak) noise.noticed=true;
     if(!visible){
@@ -2110,7 +2179,9 @@ function updateCat(dt,sprint) {
       cat.memory=heardSqueak?3.0:2.1;
     }
   }
-  if(oldPhase==='hunt'){
+  if(distracted){
+    cat.phase='investigate';cat.search=null;
+  } else if(oldPhase==='hunt'){
     if(!visible && cat.memory<=3) startCatSearch();
   } else if(oldPhase==='search'){
     if(visible) cat.phase='hunt';
@@ -2137,9 +2208,9 @@ function updateCat(dt,sprint) {
         cat.goal=(cat.goal+1)%patrol.length;target=point(...patrol[cat.goal]);cat.repath=0;
       }
     }
-    const speed=cat.phase==='hunt'?(levelIndex===0?4.52:4.85):cat.phase==='investigate'?2.31:1.72;
+    const speed=cat.phase==='hunt'?(levelIndex===0?4.52:4.85):distracted?3.2:cat.phase==='investigate'?2.31:1.72;
     if(target && distance(cat,target)>.25) navigateCat(target,dt,speed);
-    else if(cat.phase!=='patrol') cat.yaw+=dt*1.95;
+    else if(cat.phase!=='patrol'&&!distracted) cat.yaw+=dt*1.95;
   }
   cat.patrolStall=cat.phase==='patrol'&&!cat.speed?cat.patrolStall+dt:0;
   if(cat.patrolStall>1.15){
@@ -2152,7 +2223,7 @@ function updateCat(dt,sprint) {
   }
   $('alert').classList.toggle('danger',!aboveCat&&cat.phase==='hunt');
   $('alert').classList.toggle('searching',!aboveCat&&cat.phase==='search');
-  const status=aboveCat?'高处安全 · 猫在下面':cat.phase==='hunt'?'猫正在追你':
+  const status=distracted?'猫正在查看罐头':aboveCat?'高处安全 · 猫在下面':cat.phase==='hunt'?'猫正在追你':
     cat.phase==='search'?(cat.search.stage==='listen'?'猫停下听动静':'猫正在搜查附近'):
     hidden?'你藏在阴影里':cat.phase==='investigate'?'猫正在查看动静':'猫没发现你';
   setText('alertText',status);
@@ -2302,15 +2373,16 @@ function updateGoals() {
   const cageHint=coopHost()?cageHostHint():null;
   $('lockPrompt').hidden=Boolean(cageRound)||missing>0||!nearLockedDen();
   let hint='';
-  const climb=nearbyClimb();
+  const climb=nearbyClimb(), can=nearbyCan();
   $('climbPrompt').hidden=!climb;
+  $('pushCanPrompt').hidden=!can;
   if(climb) setText('climbAction',climb.up?'抓住爬架':'抓住下行爬架');
   const water=world.water;
   const atSink=water&&player.y>water.y&&Math.abs(player.x-water.x)<1.65&&
     player.z>=water.z-water.d*.5-.75&&player.z<=water.z+water.d*.5-.15;
   if(player.climb) hint=matchMedia('(pointer:coarse)').matches?
     '按住前进键往上爬，后退键往下爬':'按住 W 或 ↑ 往上爬，S 或 ↓ 往下爬';
-  else if(climb) hint='';
+  else if(climb||can) hint='';
   else if(atSink) hint=matchMedia('(pointer:coarse)').matches?'点「跳跃」跳到下一块干踏点':'按空格跳到下一块干踏点';
   else if(cageHint!==null) hint=cageHint;
   else if(gap<2) {
@@ -2428,6 +2500,7 @@ function look(dx,dy) {
 function activate(code) {
   if(code==='KeyF') startClimbing();
   if(code==='KeyE') {
+    if(pushCan()) return;
     if(coopHost()&&cageSignalNear()) unlockPointer();
     else openDenLock();
   }
@@ -2442,6 +2515,7 @@ function inputs() {
   $('modalAction').insertBefore(document.createTextNode(''),$('modalAction').firstChild);
   $('start').addEventListener('click',()=>begin(selectedLevel()));
   $('climbPrompt').addEventListener('click',startClimbing);
+  $('pushCanPrompt').addEventListener('click',pushCan);
   $('pause').addEventListener('click',()=>showModal('paused'));
   $('lockPrompt').addEventListener('click',openDenLock);
   $('closeLock').addEventListener('click',closeDenLock);
@@ -2552,6 +2626,7 @@ function run() {
     if(mode==='play'){
       time+=dt;alertPulse=Math.max(0,alertPulse-dt*.66);
       const sprint=updatePlayer(dt);
+      updateCan();
       updateCat(dt,sprint);
       if(mode==='play') updateGoals();
       sendCageWorld(now);
@@ -2633,10 +2708,17 @@ function sendCageWorld(now) {
   const paw=time<cageRound.pawUntil?cageRound.pawCount:0;
   const pose=[player.x,player.y,player.z,player.yaw%TAU,player.eye,player.gait%TAU,paw,
     cat.x,cat.z,cat.yaw%TAU,cat.gait%TAU,cat.speed,cat.phase==='hunt'?1:0];
-  sendRoom({type:'view',round:cageRound.id,pose:pose.map(value=>Math.round(value*100)/100)});
+  const pushedAt=world.can?.pushedAt;
+  const can=pushedAt==null?undefined:Math.min(CAN_SETTLED,Math.round((time-pushedAt)*100)/100);
+  sendRoom({type:'view',round:cageRound.id,pose:pose.map(value=>Math.round(value*100)/100),can});
 }
-function acceptCageWorld(pose) {
+function acceptCageWorld(pose,canElapsed) {
   if(!Array.isArray(pose)||pose.length!==13||pose.some(value=>!Number.isFinite(value)||Math.abs(value)>120)) return;
+  const can=world.can;
+  if(can&&Number.isFinite(canElapsed)&&canElapsed>=0&&canElapsed<=CAN_SETTLED&&canElapsed>(can.remoteElapsed??-1)){
+    if(can.remoteElapsed!==null&&can.remoteElapsed<CAN_IMPACT&&canElapsed>=CAN_IMPACT) playCanImpact();
+    can.remoteElapsed=canElapsed;
+  }
   cageWindowTarget=pose;
   if(!cageWindowPose) cageWindowPose=pose.slice();
   setText('cageWindowStatus','实时视角');
@@ -2930,7 +3012,7 @@ function receiveCoop(message) {
       if(cageGuest.phase==='next'&&message.index===cageGuest.index+1&&levels[message.index]){
         enterOutsideView(message.index,true);
       }
-    } else if(message.type==='view') acceptCageWorld(message.pose);
+    } else if(message.type==='view') acceptCageWorld(message.pose,message.can);
     else if(message.type==='signal') displayCageSignal(message.kind,message.count);
     else if(message.type==='replyAck') {
       const update=cageReplies.get(message.status)?.guest;
