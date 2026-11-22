@@ -836,6 +836,12 @@ const levels = [
     scene:'laundry'
   }
 ];
+const catDifficulty = [
+  {patrolSpeed:1.72, chaseSpeed:4.52, investigateSpeed:2.31, awareness:1,    hearing:6.5, searchRange:2.15, searchChecks:1},
+  {patrolSpeed:2.05, chaseSpeed:5.00, investigateSpeed:2.52, awareness:1.08, hearing:6.7, searchRange:2.15, searchChecks:1},
+  {patrolSpeed:2.29, chaseSpeed:5.20, investigateSpeed:2.78, awareness:1.15, hearing:7.1, searchRange:2.60, searchChecks:1},
+  {patrolSpeed:2.46, chaseSpeed:5.36, investigateSpeed:3.01, awareness:1.22, hearing:7.6, searchRange:2.75, searchChecks:2}
+];
 let levelIndex=0, world, player, cat;
 let mode='menu', time=0, sniffUntil=0, readyAt=0, toastUntil=0, alertPulse=0;
 let view, meshes, shader, catShapes=[], viewportWidth=0, viewportHeight=0;
@@ -2081,13 +2087,17 @@ function startCatSearch() {
   const heading=cat.lastDirection??angleTo(cat.last.x-cat.x,cat.last.z-cat.z);
   const approach=catCanWalkTo(cat.last)?cat.last:pathBetween(cat,cat.last).at(-1)??point(cat.x,cat.z);
   cat.phase='search';
-  cat.search={stage:'approach',target:approach,heading,until:time+3.2,yaw:cat.yaw};
+  cat.search={stage:'approach',target:approach,heading,until:time+3.2,yaw:cat.yaw,checks:0,origin:null};
 }
-function catSearchTarget(heading) {
+function catSearchTarget(search,difficulty) {
+  const followup=search.checks>0;
+  const heading=followup?cat.yaw:search.heading;
+  const offsets=followup?[1.08,-1.08,1.65,-1.65,0]:[0,.7,-.7,1.45,-1.45];
   let straight=null;
-  for(const offset of [0,.7,-.7,1.45,-1.45]){
+  for(const offset of offsets){
     const angle=heading+offset;
-    const target=point(cat.x+Math.sin(angle)*2.15,cat.z+Math.cos(angle)*2.15);
+    const target=point(cat.x+Math.sin(angle)*difficulty.searchRange,cat.z+Math.cos(angle)*difficulty.searchRange);
+    if(followup&&distance(target,search.origin)<1.6) continue;
     if(blocks(target.x,target.z,.10,1.04,.50)) continue;
     if(catCanWalkTo(target)){
       straight??=target;
@@ -2098,11 +2108,12 @@ function catSearchTarget(heading) {
   }
   return straight;
 }
-function updateCatSearch(dt) {
+function updateCatSearch(dt,difficulty) {
   const search=cat.search;
+  const searchSpeed=difficulty.investigateSpeed+.05;
   if(search.stage==='approach'){
     if(time<search.until && distance(cat,search.target)>.27){
-      navigateCat(search.target,dt,3.15);return;
+      navigateCat(search.target,dt,searchSpeed+.79);return;
     }
     search.stage='listen';
     search.until=time+.95;
@@ -2115,12 +2126,18 @@ function updateCatSearch(dt) {
       return;
     }
     search.stage='check';
-    search.target=catSearchTarget(search.heading);
+    search.origin=point(cat.x,cat.z);
+    search.target=null;
+  }
+  const finishedSpot=!search.target||time>=search.until||distance(cat,search.target)<=.27;
+  if(finishedSpot&&search.checks<difficulty.searchChecks){
+    search.target=catSearchTarget(search,difficulty);
+    search.checks++;
     search.until=time+2.55;
     cat.repath=0;
   }
   if(search.target && time<search.until && distance(cat,search.target)>.27){
-    navigateCat(search.target,dt,2.36);return;
+    navigateCat(search.target,dt,searchSpeed);return;
   }
   cat.search=null;
   cat.phase='patrol';
@@ -2143,6 +2160,7 @@ function followCanNoise(visible) {
 }
 function updateCat(dt,sprint) {
   const patrol=world.level.patrol;
+  const difficulty=catDifficulty[levelIndex];
   if(!world.grid) buildCatGrid();
   const near=distance(player,cat), hidden=protectedByCover();
   const front=angleTo(player.x-cat.x,player.z-cat.z);
@@ -2154,7 +2172,7 @@ function updateCat(dt,sprint) {
     (facing<(onTrail?1.35:1.04)||near<1.55) &&
     clearSight(cat,player,1.02,player.y+(player.low?.13:.26));
   const distracted=followCanNoise(visible);
-  const footSound=!aboveCat && !hidden && sprint && near<6.5 && clearSight(cat,player,.50,player.y+.13);
+  const footSound=!aboveCat && !hidden && sprint && near<difficulty.hearing && clearSight(cat,player,.50,player.y+.13);
   const noise=cageRound?.noise;
   const heardSqueak=noise&&time<noise.until&&distance(noise,cat)<9.2&&clearSight(cat,noise,.58,.26);
   const audible=footSound||heardSqueak;
@@ -2163,7 +2181,7 @@ function updateCat(dt,sprint) {
     if(cat.seesPlayer && distance(player,cat.last)>.012){
       cat.lastDirection=angleTo(player.x-cat.last.x,player.z-cat.last.z);
     } else if(!cat.seesPlayer&&!onTrail) cat.lastDirection=null;
-    cat.alert=clamp(cat.alert+dt*(near<2.2?2.25:player.low?.98:1.46),0,1);
+    cat.alert=clamp(cat.alert+dt*difficulty.awareness*(near<2.2?2.25:player.low?.98:1.46),0,1);
     cat.last=point(player.x,player.z);
     cat.memory=3.25;
   } else {
@@ -2199,7 +2217,7 @@ function updateCat(dt,sprint) {
     }
   }
   cat.speed=0;
-  if(cat.phase==='search') updateCatSearch(dt);
+  if(cat.phase==='search') updateCatSearch(dt,difficulty);
   else {
     let target=cat.last;
     if(cat.phase==='patrol'){
@@ -2208,7 +2226,8 @@ function updateCat(dt,sprint) {
         cat.goal=(cat.goal+1)%patrol.length;target=point(...patrol[cat.goal]);cat.repath=0;
       }
     }
-    const speed=cat.phase==='hunt'?(levelIndex===0?4.52:4.85):distracted?3.2:cat.phase==='investigate'?2.31:1.72;
+    const speed=cat.phase==='hunt'?difficulty.chaseSpeed:distracted?3.2:
+      cat.phase==='investigate'?difficulty.investigateSpeed:difficulty.patrolSpeed;
     if(target && distance(cat,target)>.25) navigateCat(target,dt,speed);
     else if(cat.phase!=='patrol'&&!distracted) cat.yaw+=dt*1.95;
   }
