@@ -184,7 +184,7 @@ html[lang=en] #coopLobby{align-items:safe center}
   <header><span class="chapter" id="chapter"></span><strong id="levelName"></strong><span id="task"></span><div id="progress"></div><div id="clues"><span id="clueHeading">数字线索</span><span id="clueDigits"></span></div><span id="guestConnected" hidden>联机 · 笼外</span></header>
   <div id="tools"><button id="audio" class="utility" aria-label="切换音效" aria-pressed="true">音效 开</button><button id="pause" class="utility">暂停</button><button id="endCoop" class="utility" hidden>退出联机</button></div>
   <div id="alert"><span id="alertText">猫没发现你</span><span class="bar"><i id="alertFill"></i></span></div>
-  <span id="crosshair"></span><p id="prompt" hidden></p><button id="lockPrompt" type="button" hidden><kbd>E</kbd> 打开密码锁</button><button id="climbPrompt" type="button" hidden><kbd>F</kbd><span id="climbAction">爬上去</span></button><p id="toast" role="status" hidden></p>
+  <span id="crosshair"></span><p id="prompt" hidden></p><button id="lockPrompt" type="button" hidden><kbd>E</kbd> 打开密码锁</button><button id="climbPrompt" type="button" hidden><kbd>F</kbd><span id="climbAction">抓住爬架</span></button><p id="toast" role="status" hidden></p>
   <div id="markers"></div>
   <div id="coopSignals" hidden>
     <strong id="cageLampText"></strong>
@@ -337,6 +337,13 @@ html[lang=en] #coopLobby{align-items:safe center}
 'use strict';
 const $ = id => document.getElementById(id);
 const englishUi={
+  "抓住爬架": "Grab Ladder",
+  "抓住下行爬架": "Grab Ladder Down",
+  "按住 W 或 ↑ 往上爬，S 或 ↓ 往下爬": "Hold W or ↑ to climb up, S or ↓ to climb down",
+  "按住前进键往上爬，后退键往下爬": "Hold Forward to climb up, Back to climb down",
+  "在爬架上": "On the ladder",
+  "高处安全 · 猫在下面": "Safe up high · The cat is below",
+  "按 C 钻进锁前的矮遮挡": "Press C to crawl under cover by the lock",
   "食物笔记": "Food Notes",
   "收集食物上的数字。锁旁的图案提示第一位。": "Collect the digits on the food. The carving by the lock hints at the first digit.",
   "数字齐了。去墙洞看图案，找出第一位。": "You have all three digits. Check the carving by the mouse hole for the first digit.",
@@ -800,8 +807,9 @@ const levels = [
     title:'储藏室的窄路', intro:'找到坚果上的数字。推车下有条近路。', width:16, depth:23,
     spawn:[-2.8,1.3,.10], home:[4.3,22.55], light:[3.5,4.7,15.8], fog:'343e42',
     food:[[-5.68,7.0,'榛果','e4a464'],[5.75,17.6,'核桃','ecc98b'],[.82,14.5,'松子','e6c9a0']],
-    patrol:[[4.6,9.2],[4.65,12.6],[4.3,20.1],[-2.5,20.0],[-4.7,16.2],[-4.75,10.35],[-3.75,4.8],[4.7,4.95]],
-    scene:'pantry'
+    patrol:[[3.85,3.56],[4.8,8.5],[4.7,13.4],[4.75,17.65],[2.5,20.65],[-1.35,21.2],
+      [-4.55,19.35],[-4.85,15.0],[-4.75,10.35],[-4.32,6.3],[-4.6,2.6],[-1.17,4.83],[2.25,8.0],[4.55,5.45]],
+    scene:'pantry', denCover:'927254'
   },
   {
     title:'越过水槽', intro:'沿金色爬架上桌，跳过水槽的干踏点。墙洞在地面。',
@@ -809,8 +817,9 @@ const levels = [
     width:14, depth:18.6, spawn:[-2.6,1.36,0], home:[2.8,18.18],
     light:[-2.6,4.5,10.3], fog:'25424a',
     food:[[2.35,5.8,'饼干屑','e5aa66'],[-2.75,7.2,'面包屑','d9aa69',1.64],[-2.62,14.48,'奶酪','f9b74d',1.64]],
-    patrol:[[2,3.85],[4.38,6.55],[3.43,11.6],[4.22,16.1],[.65,16.2],[.45,7.9]],
-    scene:'sink'
+    patrol:[[2.8,3.4],[5.47,5.75],[5.22,8.7],[4.44,13.55],[4.56,15.45],[1.15,16.55],
+      [-5.42,16.48],[-5.53,12.56],[-5.42,8.85],[-5.36,4.9],[-4.7,2.58],[-.84,2.52]],
+    scene:'sink', denCover:'85735c'
   },
   {
     title:'洗衣房的高架', intro:'沿金色爬架上高架，走过窄板。墙洞在地面。',
@@ -1215,6 +1224,11 @@ function pantry() {
   crate(.4,19.35,2.32,1.34,.99);
   narrowPass(3.12,5.5,1.8,2.25,'8c7554');
   crate(-.12,3.0,1.55,1.23,.89);
+  // Divide the middle aisle with supply boxes and leave crouch routes on either side.
+  crate(.35,8.25,1.58,1.25,1.17,'b69768');
+  crate(2.6,16.12,1.42,1.23,1.24,'927852');
+  narrowPass(-2.16,6.40,1.78,1.46,'796346');
+  narrowPass(2.64,18.57,1.50,1.38,'88694c');
   box('6d8478',1.09,.031,15.8,3.85,.052,2.25,{material:3});
   box('926d52',-3.1,.035,7.1,3.22,.058,1.9,{material:3});
   makeWindow(-2.1,22.86,2.9,1.72,3.17);
@@ -1269,6 +1283,10 @@ function sinkRoom() {
   jar(-4.02,top,6.19,'617e78',1.15);
   jar(-3.96,top,14.91,'8a643e',.86);
   crate(5.44,11.87,1.14,1.84,.53,'7d6854');
+  crate(1.95,11.53,1.26,1.61,1.22,'a27d54');
+  narrowPass(3.55,8.72,1.85,1.40,'80694c');
+  narrowPass(2.65,14.15,1.90,1.42,'825e47');
+  box('59695f',-5.63,.02,10.21,1.17,.035,9.2,{material:3});
   makeWindow(-1.1,18.45,2.90,1.72,2.96);
 }
 function laundryRoom() {
@@ -1501,17 +1519,19 @@ function createLevel(index) {
   const food=cageRound?cageFood(level):level.food.map(([x,z,name,color,y=0],i)=>({x,y,z,name,color,digit:digits[i],found:false}));
   const answer=cageRound?'':shuffle(digits).join('');
   const firstFood=index===0&&!cageRoom?.active?food.find(item=>item.digit===answer[0]).name:null;
-  const lock={answer,firstFood,failed:new Set(),openedAt:null};
+  const sheltered=Boolean(level.denCover&&!cageRoom?.active);
+  const lock={answer,firstFood,sheltered,failed:new Set(),openedAt:null};
   world={level,shapes:[],obstacles:[],climbs:[],water:null,dryCheckpoint:null,checkpoint:null,food,lock,home:point(...level.home)};
   environment(level);
   levelScenes[level.scene]();
+  if(sheltered) narrowPass(world.home.x,world.home.z-.93,1.80,1.62,level.denCover);
   const [x,z,yaw]=level.spawn;
   player={x,z,y:0,yaw,pitch:.035,eye:.33,vY:0,stamina:1,stance:false,low:false,ground:true,gait:0,amount:0,climb:null,splashUntil:0};
   const [cx,cz]=level.patrol[0], [nx,nz]=level.patrol[1];
   cat={
     x:cx,z:cz,yaw:angleTo(nx-cx,nz-cz),alert:0,goal:1,phase:'patrol',
     memory:0,last:null,seesPlayer:false,lastDirection:null,search:null,
-    trail:[],repath:0,gait:0,speed:0,stepDistance:0
+    trail:[],repath:0,gait:0,speed:0,stepDistance:0,patrolStall:0
   };
   setupCat();
   time=0;sniffUntil=0;readyAt=0;toastUntil=0;alertPulse=0;footstep=0;
@@ -1700,6 +1720,7 @@ function render(dt, filmTime) {
   if(!inCage) drawEffects(dt,filmTime);
   if(mode==='play') updateMarkers();
 }
+const CAT_SAFE_HEIGHT=1.1;
 function drawEffects(dt,filmTime) {
   if(!paint) return;
   const w=viewportWidth, h=viewportHeight;
@@ -1717,7 +1738,7 @@ function drawEffects(dt,filmTime) {
     ring.addColorStop(1,'rgba(244,183,98,'+(.27*faded)+')');
     paint.fillStyle=ring;paint.fillRect(0,0,w,h);
   }
-  if(alertPulse>0 || cat.alert>.63) {
+  if(player.y<CAT_SAFE_HEIGHT&&(alertPulse>0||cat.alert>.63)) {
     const amount=Math.max(alertPulse,(cat.alert-.63)*.65)*(0.85+Math.sin(filmTime*7.5)*.15);
     const glare=paint.createRadialGradient(w*.5,h*.47,h*.23,w*.5,h*.50,Math.max(w,h)*.62);
     glare.addColorStop(0,'#ed623a00');
@@ -1832,30 +1853,28 @@ function startClimbing() {
   const available=nearbyClimb();
   if(!available) return;
   const {rail,up}=available;
-  const outside={x:rail.lower.x,y:rail.upper.y,z:rail.lower.z};
-  player.climb={segments:up?[rail.lower,outside,rail.upper]:[rail.upper,outside,rail.lower],index:0};
-  player.stance=false;player.low=false;player.ground=false;player.vY=0;
+  const rise=rail.upper.y-rail.lower.y;
+  const total=rise+distance(rail.lower,rail.upper);
+  Object.assign(player,up?rail.lower:rail.upper);
+  player.climb={rail,travel:up?0:total,rise,total};
+  player.stance=false;player.low=false;player.ground=false;player.vY=0;player.amount=0;
   $('climbPrompt').hidden=true;
   playTone(95,.065,.038,'triangle',57);
 }
-function moveOnClimb(dt) {
+function moveOnClimb(dt,direction) {
+  if(!direction) return;
   const climb=player.climb;
-  const next=climb.segments[climb.index];
-  const dx=next.x-player.x, dy=next.y-player.y, dz=next.z-player.z;
-  const span=Math.hypot(dx,dy,dz), speed=2.27;
-  if(span<=speed*dt){
-    Object.assign(player,next);
-    climb.index++;
-    if(climb.index===climb.segments.length){
-      player.climb=null;player.ground=true;
-      playTone(105,.075,.047,'triangle',51);
-    }
-  } else {
-    const fraction=speed*dt/span;
-    player.x+=dx*fraction;player.y+=dy*fraction;player.z+=dz*fraction;
-  }
-  player.amount=0;
+  const {lower,upper}=climb.rail;
+  climb.travel=clamp(climb.travel+dt*2.27*direction,0,climb.total);
+  const across=Math.max(0,climb.travel-climb.rise)/(climb.total-climb.rise);
+  player.x=mix(lower.x,upper.x,across);
+  player.y=lower.y+Math.min(climb.travel,climb.rise);
+  player.z=mix(lower.z,upper.z,across);
   player.gait+=dt*8.4;
+  if(climb.travel===0||climb.travel===climb.total){
+    player.climb=null;player.ground=true;
+    playTone(105,.075,.047,'triangle',51);
+  }
 }
 function checkWater() {
   const {water,dryCheckpoint}=world;
@@ -1883,8 +1902,12 @@ function updatePlayer(dt) {
   const height=low?.175:.355;
   const held=(...codes)=>codes.some(code=>pressed.has(code));
   player.yaw+=(Number(held('ArrowRight'))-Number(held('ArrowLeft')))*dt*1.64;
+  if(player.climb){
+    const vertical=Number(held('KeyW','ArrowUp'))-Number(held('KeyS','ArrowDown'));
+    moveOnClimb(dt,vertical);
+    return false;
+  }
   player.pitch=clamp(player.pitch+(Number(held('ArrowUp'))-Number(held('ArrowDown')))*dt*1.3,-1.22,1.22);
-  if(player.climb){moveOnClimb(dt);return false;}
   const forward=Number(held('KeyW'))-Number(held('KeyS'));
   const side=Number(held('KeyD'))-Number(held('KeyA'));
   const move=Math.hypot(forward,side);
@@ -2057,10 +2080,12 @@ function updateCat(dt,sprint) {
   const front=angleTo(player.x-cat.x,player.z-cat.z);
   const facing=Math.abs(angleDiff(cat.yaw,front));
   const onTrail=cat.phase==='hunt'||cat.phase==='search';
-  const visible=!hidden && near<(player.low?5.4:8.1) &&
+  // The cat patrols the floor. High furniture breaks the trail even at the visible edge.
+  const aboveCat=player.y>=CAT_SAFE_HEIGHT;
+  const visible=!aboveCat && !hidden && near<(player.low?5.4:8.1) &&
     (facing<(onTrail?1.35:1.04)||near<1.55) &&
     clearSight(cat,player,1.02,player.y+(player.low?.13:.26));
-  const footSound=!hidden && sprint && near<6.5 && clearSight(cat,player,.50,player.y+.13);
+  const footSound=!aboveCat && !hidden && sprint && near<6.5 && clearSight(cat,player,.50,player.y+.13);
   const noise=cageRound?.noise;
   const heardSqueak=noise&&time<noise.until&&distance(noise,cat)<9.2&&clearSight(cat,noise,.58,.26);
   const audible=footSound||heardSqueak;
@@ -2116,12 +2141,16 @@ function updateCat(dt,sprint) {
     if(target && distance(cat,target)>.25) navigateCat(target,dt,speed);
     else if(cat.phase!=='patrol') cat.yaw+=dt*1.95;
   }
+  cat.patrolStall=cat.phase==='patrol'&&!cat.speed?cat.patrolStall+dt:0;
+  if(cat.patrolStall>1.15){
+    cat.goal=(cat.goal+1)%patrol.length;cat.repath=0;cat.patrolStall=0;
+  }
   if(!hidden && distance(player,cat)<.73 && player.y<.82 && clearSight(cat,player,.50,player.y+.15)) {
     showModal('caught');return;
   }
-  $('alert').classList.toggle('danger',cat.phase==='hunt');
-  $('alert').classList.toggle('searching',cat.phase==='search');
-  const status=cat.phase==='hunt'?'猫正在追你':
+  $('alert').classList.toggle('danger',!aboveCat&&cat.phase==='hunt');
+  $('alert').classList.toggle('searching',!aboveCat&&cat.phase==='search');
+  const status=aboveCat?'高处安全 · 猫在下面':cat.phase==='hunt'?'猫正在追你':
     cat.phase==='search'?(cat.search.stage==='listen'?'猫停下听动静':'猫正在搜查附近'):
     hidden?'你藏在阴影里':cat.phase==='investigate'?'猫正在查看动静':'猫没发现你';
   setText('alertText',status);
@@ -2273,13 +2302,16 @@ function updateGoals() {
   let hint='';
   const climb=nearbyClimb();
   $('climbPrompt').hidden=!climb;
-  if(climb) setText('climbAction',climb.up?'爬上去':'爬下去');
+  if(climb) setText('climbAction',climb.up?'抓住爬架':'抓住下行爬架');
   const water=world.water;
   const atSink=water&&player.y>water.y&&Math.abs(player.x-water.x)<1.65&&
     player.z>=water.z-water.d*.5-.75&&player.z<=water.z+water.d*.5-.15;
-  if(climb||player.climb) hint='';
+  if(player.climb) hint=matchMedia('(pointer:coarse)').matches?
+    '按住前进键往上爬，后退键往下爬':'按住 W 或 ↑ 往上爬，S 或 ↓ 往下爬';
+  else if(climb) hint='';
   else if(atSink) hint=matchMedia('(pointer:coarse)').matches?'点「跳跃」跳到下一块干踏点':'按空格跳到下一块干踏点';
   else if(cageHint!==null) hint=cageHint;
+  else if(world.lock.sheltered&&!open&&!player.low&&gap<2.55&&$('lockPrompt').hidden) hint='按 C 钻进锁前的矮遮挡';
   else if(gap<2) {
     if(open) hint='往前钻进墙洞';
     else if(missing) hint='还差 '+missing+' 个数字';
@@ -2294,7 +2326,7 @@ function updateGoals() {
   $('staminaFill').style.transform='scaleX('+player.stamina.toFixed(2)+')';
   const touch=matchMedia('(pointer:coarse)').matches;
   setText('sniffLabel',time<sniffUntil?'正在嗅闻':time>=readyAt?(touch?'嗅闻就绪':'Q · 嗅闻'):'气味恢复中');
-  setText('stance',player.low?'贴地潜行':player.amount>3.65?'冲刺 · 猫能听见':touch?'慢走':'慢走 · C 潜行');
+  setText('stance',player.climb?'在爬架上':player.low?'贴地潜行':player.amount>3.65?'冲刺 · 猫能听见':touch?'慢走':'慢走 · C 潜行');
 }
 function audioStart() {
   if(!audioEnabled) return;
@@ -2399,7 +2431,7 @@ function activate(code) {
     else openDenLock();
   }
   if(code==='KeyQ') sniff();
-  if(code==='KeyC') toggleStance();
+  if(code==='KeyC'&&!player.climb) toggleStance();
   if(code==='Space' && player.ground && !player.low && !player.climb){
     player.vY=3.05;player.ground=false;
     playTone(126,.065,.055,'triangle',75);
