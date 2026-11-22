@@ -163,6 +163,11 @@ html[lang=en] #coopLobby{align-items:safe center}
 #climbPrompt:not([hidden])+#pushCanPrompt{top:calc(50% + 74px)}
 #climbPrompt kbd,#pushCanPrompt kbd{margin-right:5px}
 @media(pointer:coarse){#climbPrompt kbd,#pushCanPrompt kbd{display:none}}
+#denEnding{position:absolute;inset:auto 0 0;display:flex;align-items:flex-end;justify-content:space-between;gap:14px;padding:clamp(14px,3vw,34px);background:linear-gradient(0deg,#21130dee 14%,#21130d98 70%,transparent);color:#fff0cf}
+#denEnding h2{font-size:clamp(25px,4vw,44px);line-height:1.1;text-shadow:0 2px 12px #32190c;font-weight:700}
+#denEnding p{margin-top:7px;font-size:clamp(13px,1.9vw,16px);line-height:1.4;color:#ffe5b8}
+#denContinue{flex-shrink:0;text-align:center}
+@media(max-width:470px){#denEnding{flex-wrap:wrap;gap:10px}#denContinue{min-height:42px;padding:10px 15px}}
 
 </style>
 </head>
@@ -203,6 +208,7 @@ html[lang=en] #coopLobby{align-items:safe center}
     <div class="touch-group touch-actions"><button class="touch-button" data-key="KeyQ">嗅闻</button><button class="touch-button" data-key="KeyC">潜行</button><button class="touch-button" data-key="Space">跳跃</button><button class="touch-button" data-key="ShiftLeft">冲刺</button></div>
   </div>
 </div>
+<section id="denEnding" aria-labelledby="denTitle" hidden><div><h2 id="denTitle"></h2><p id="denCopy"></p></div><button id="denContinue" class="primary" type="button"></button></section>
 <div id="modal" hidden><section class="dialog" role="dialog" aria-modal="true" aria-labelledby="modalTitle"><div class="stamp" id="modalTag"></div><h2 id="modalTitle"></h2><p id="modalCopy"></p><div class="dialog-actions"><button id="modalAction" class="primary"><span aria-hidden="true">→</span></button><button id="modalOther" class="utility"></button></div></section></div>
 <div id="lockScreen" hidden>
   <section class="dialog" role="dialog" aria-modal="true" aria-labelledby="lockTitle">
@@ -347,6 +353,12 @@ const englishUi={
   "推下空罐头": "Push the Empty Can",
   "等猫走向罐头，再下梯。": "Wait for the cat to head to the can, then climb down.",
   "猫正在查看罐头": "The cat is checking the can",
+  "到家了": "Home at last",
+  "你把奶酪、面包屑和饼干屑带回了小窝。": "You brought cheese, bread crumbs, and cookie crumbs home.",
+  "你们把奶酪带回了小窝。": "You brought the cheese home together.",
+  "前往洗衣房": "Continue to the Laundry Room",
+  "门闩打开了。沿着暖光钻回小窝。": "The latch is open. Follow the warm light into the den.",
+  "你们回到小窝了。等队友继续。": "You made it back to the den. Wait for your partner to continue.",
   "食物笔记": "Food Notes",
   "收集食物上的数字。锁旁的图案提示第一位。": "Collect the digits on the food. The carving by the lock hints at the first digit.",
   "数字齐了。去墙洞看图案，找出第一位。": "You have all three digits. Check the carving by the mouse hole for the first digit.",
@@ -880,6 +892,7 @@ function initGL() {
     uniform vec3 uLamp;
     uniform vec3 uFog;
     uniform vec3 uCat;
+    uniform vec3 uDenGlow;
     uniform vec2 uRoom;
     uniform float uEmissive;
     uniform float uMaterial;
@@ -907,6 +920,13 @@ function initGL() {
       float wash=1.0/(1.0+dot(delta,delta)*0.033);
       vec3 light=vec3(0.48,0.55,0.60)+cool*vec3(0.23,0.33,0.39)+wash*(0.16+key)*vec3(1.35,0.88,0.48);
       vec3 p=vPosition;
+      if (uDenGlow.z>0.0) {
+        vec2 offset=p.xz-uDenGlow.xy;
+        vec2 spread=vec2(0.39+max(0.0,-offset.y)*0.48,1.35);
+        vec2 ray=(offset+vec2(0.0,0.36))/spread;
+        float pool=exp(-dot(ray,ray))*uDenGlow.z*(1.0-clamp(p.y*1.15,0.0,1.0));
+        light+=vec3(1.43,0.77,0.26)*pool;
+      }
       float texture=0.96+0.12*noise(p*7.0)+0.08*(hash(floor(p*123.0))-0.5);
       if (uMaterial>0.5 && uMaterial<1.5) {
         vec2 tile=p.xz/1.28+vec2(0.5);
@@ -938,7 +958,7 @@ function initGL() {
   if (!gl.getProgramParameter(program,gl.LINK_STATUS)) throw Error(gl.getProgramInfoLog(program));
   gl.useProgram(program);
   const uniforms={};
-  for (const name of ['Model','View','Scale','Color','Eye','Lamp','Fog','Room','Cat','Emissive','Material']) {
+  for (const name of ['Model','View','Scale','Color','Eye','Lamp','Fog','Room','Cat','Emissive','Material','DenGlow']) {
     uniforms[name]=gl.getUniformLocation(program,'u'+name);
   }
   shader={...uniforms,position:gl.getAttribLocation(program,'aPosition'),normal:gl.getAttribLocation(program,'aNormal')};
@@ -1121,7 +1141,7 @@ function den(x,z) {
   for(const dx of [-.038,0,.038]) box('343d38',x+.49+dx,.347,z-.311,.025,.035,.014);
   if(world.lock.firstFood) carveLockClue(x,z,world.lock.firstFood);
   world.lock.barrier=obstacle(x,.25,z-.17,.68,.50,.11);
-  box('29281c',x,.25,z+.34,1.0,.51,.06);
+  if(world.level.scene!=='sink') box('29281c',x,.25,z+.34,1.0,.51,.06);
   box('ad9163',x,.028,z-.08,1.02,.044,.64,{material:2});
   for (let i=0;i<6;i++) {
     place('sphere','b9a77d',x+Math.sin(i*2.0)*.43,.037,z-.42-i*.13,.055,.048,.09);
@@ -1300,6 +1320,65 @@ function sinkRoom() {
   narrowPass(2.65,14.15,1.90,1.42,'825e47');
   box('59695f',-5.63,.02,10.21,1.17,.035,9.2,{material:3});
   makeWindow(-1.1,18.45,2.90,1.72,2.96);
+  buildSinkDen();
+}
+function buildSinkDen() {
+  const {x}=world.home, {depth}=world.level;
+  const shapes=[];
+  const add=(type,color,dx,y,dz,w,h,d,options)=>shapes.push(element(type,color,x+dx,y,depth+dz,w,h,d,options));
+  const piece=(color,dx,y,dz,w,h,d,options)=>add('box',color,dx,y,dz,w,h,d,options);
+  const wood={material:2};
+  // A narrow slot through the wall opens into a room built from leftover boards and fabric.
+  piece('ab7449',0,-.06,.52,.72,.12,1.38,wood);
+  piece('4f3227',0,.60,.57,.77,.18,1.34,wood);
+  for(const side of [-1,1]){
+    piece('6d4430',side*.365,.29,.58,.095,.62,1.28,wood);
+    piece('996747',side*1.27,.69,1.22,1.84,1.38,.19,wood);
+    piece('79523c',side*2.10,.72,2.95,.16,1.44,3.65,wood);
+    piece('c49366',side*2.01,.16,2.95,.06,.24,3.56,wood);
+  }
+  piece('76523f',0,.73,4.78,4.28,1.46,.16,wood);
+  piece('6b4631',0,1.45,2.98,4.24,.13,3.74,wood);
+  for(let i=0;i<11;i++) piece(i%2?'986246':'ac7552',(i-5)*.38,-.065,2.95,.374,.13,3.64,wood);
+  for(const dx of [-1.42,0,1.42]) piece('553525',dx,1.36,2.99,.105,.12,3.64,wood);
+  for(const dz of [2.02,3.14,4.32]) piece('8b5d42',0,1.33,dz,4.22,.10,.092,wood);
+  piece('6f7770',-.14,.013,2.72,2.34,.027,1.83,{material:3,glow:.15});
+  for(const dz of [1.92,2.01,3.42,3.51]) piece('d4a972',-.14,.031,dz,2.33,.012,.040,{material:3,glow:.28});
+
+  // A patchwork matchbox bed and a thread-spool table.
+  piece('a66343',-1.42,.14,3.28,1.03,.27,1.24,wood);
+  piece('d3a478',-1.42,.29,3.30,.92,.12,1.15,wood);
+  piece('765f73',-1.42,.355,3.17,.91,.062,.85,{material:3,glow:.12});
+  for(const dx of [-1.70,-1.39,-1.07]) piece('c498a0',dx,.392,3.17,.044,.011,.84,{glow:.26});
+  add('sphere','e2c8a0',-1.42,.382,3.68,.66,.16,.32,{glow:.20});
+  add('tube','896244',.02,.057,3.51,.85,.095,.85,wood);
+  add('tube','ae8151',.02,.19,3.51,.67,.26,.67,wood);
+  for(const y of [.10,.15,.20,.25]) add('tube','c59b6e',.02,y,3.51,.695,.018,.695);
+  add('tube','b9814d',.02,.34,3.51,1.77,.105,1.57,wood);
+  add('tube','b7b4a0',.02,.400,3.45,1.22,.029,1.05,{glow:.18});
+  add('tube','5d746e',.02,.416,3.45,1.10,.012,.93,{glow:.24});
+
+  piece('724b38',1.47,.17,4.04,.79,.32,.92,wood);
+  piece('c39861',1.47,.35,4.04,.90,.06,1.01,wood);
+  for(let i=0;i<3;i++) add('tube',['987655','8e8c66','a66e55'][i],1.23+i*.23,.47,4.04,.17,.20+i*.03,.17);
+  piece('4d3d39',.18,.93,4.67,1.20,.62,.08,wood);
+  piece('586b69',.18,.93,4.62,1.09,.51,.028,{glow:.24});
+  add('sphere','ffc880',.43,1.044,4.595,.14,.14,.013,{glow:.85});
+  for(const [dx,y] of [[-.18,1.07],[.02,.91],[.23,1.12],[.51,.88]]) add('sphere','fff0c7',dx,y,4.587,.035,.035,.012,{glow:1});
+
+  const lx=.79, lz=3.18;
+  piece('966d49',lx,1.27,lz,.023,.29,.024);
+  add('drum','bc7e47',lx,1.11,lz,.40,.15,.40,wood);
+  add('tube','ffcc83',lx,1.040,lz,.355,.030,.355,{glow:1});
+  add('sphere','ffe5af',lx,1.005,lz,.16,.10,.16,{glow:1});
+  // A light inside the sill is visible from the sink side of the open wall.
+  piece('e3aa66',0,.477,.90,.56,.072,.112,{glow:.84});
+  const coop=Boolean(cageRoom?.active);
+  const food=world.level.food.map(([, ,name,color],i)=>({
+    x:x+[-.35,.37,0][i],y:.426,z:depth+[3.29,3.59,3.77][i],name:coop?'奶酪':name,color
+  }));
+  world.homecoming={shapes,food,arrivedAt:null,origin:null,
+    light:[x+lx,1.05,depth+lz],depth:depth+4.86,fog:rgb('4c3128')};
 }
 function laundryRoom() {
   const x=-2.92, lower=1.15, upper=2.24;
@@ -1386,12 +1465,13 @@ function softwareGeometry(item) {
   software.objects.set(item,tris);
   return tris;
 }
-function softwareStart(level,actor,fog) {
+function softwareStart(level,actor,fog,denGlow) {
   software.pixels.fill(color32(...fog.map(channel=>Math.round(channel*255))));
   software.depth.fill(0);
   software.fog=fog;
   software.level=level;
   software.actor=actor;
+  software.denGlow=denGlow;
 }
 function clipNear(vertices) {
   const clipped=[];
@@ -1438,7 +1518,7 @@ function softwareDraw(item) {
   }
 }
 function softwareTriangle(a,b,c,fill,texture,base) {
-  const {width,height,depth,pixels,level,actor,fog}=software;
+  const {width,height,depth,pixels,level,actor,fog,denGlow}=software;
   const minX=Math.max(0,Math.floor(Math.min(a.x,b.x,c.x)));
   const minY=Math.max(0,Math.floor(Math.min(a.y,b.y,c.y)));
   const maxX=Math.min(width-1,Math.ceil(Math.max(a.x,b.x,c.x)));
@@ -1476,10 +1556,12 @@ function softwareTriangle(a,b,c,fill,texture,base) {
       const dx=wx-lx,dz=wz-lz,d2=dx*dx+ly*ly+dz*dz;
       const lamp=(.16+ly/Math.sqrt(d2))/(1+d2*.033);
       const haze=Math.min(.64,z*z/(646+z*z));
+      const fromDen=wz-level.home[1];
+      const pool=denGlow&&Math.abs(fromDen)<4?denGlow*Math.exp(-(((wx-level.home[0])/(.39+Math.max(0,-fromDen)*.48))**2+((fromDen+.36)/1.35)**2)):0;
       pixels[index]=color32(
-        Math.min(255,Math.round(mix(value*r*(.63+lamp*1.35),fr,haze)*255)),
-        Math.min(255,Math.round(mix(value*g*(.76+lamp*.88),fg,haze)*255)),
-        Math.min(255,Math.round(mix(value*blue*(.85+lamp*.48),fb,haze)*255)));
+        Math.min(255,Math.round(mix(value*r*(.63+lamp*1.35+pool*1.43),fr,haze)*255)),
+        Math.min(255,Math.round(mix(value*g*(.76+lamp*.88+pool*.77),fg,haze)*255)),
+        Math.min(255,Math.round(mix(value*blue*(.85+lamp*.48+pool*.26),fb,haze)*255)));
     }
   }
 }
@@ -1647,23 +1729,29 @@ function drawCat(actor, animationTime) {
     draw({...part,matrix});
   }
 }
-function drawFood(food) {
-  if(food.found) return;
+function drawFoodModel(food,scale=1) {
   const {x,y,z,name,color}=food;
+  const piece=(type,tint,dx,dy,dz,w,h,d,options)=>draw(element(type,tint,x+dx*scale,y+dy*scale,z+dz*scale,
+    w*scale,h*scale,d*scale,options));
   if(name.endsWith('奶酪')) {
-    draw(element('drum',color,x,y+.115,z,.48,.23,.43,{roll:.11,glow:.21}));
+    piece('drum',color,0,.115,0,.48,.23,.43,{roll:.11,glow:.21});
     for(const [dx,dz,r] of [[-.10,-.09,.10],[.08,.08,.09],[.11,-.115,.07]]) {
-      draw(element('sphere','a97239',x+dx,y+.224,z+dz,r,.018,r));
+      piece('sphere','a97239',dx,.224,dz,r,.018,r);
     }
   } else if(name==='面包屑'||name==='饼干屑') {
     for(let i=0;i<5;i++){
       const angle=i*2.513;
-      draw(element('drum',i===1?'ffc78b':color,x+Math.sin(angle)*.15,y+.09+i%2*.029,z+Math.cos(angle)*.14,.119+i%3*.052,.14+i%2*.06,.161,{yaw:angle,roll:Math.sin(i)*.19,glow:.21}));
+      piece('drum',i===1?'ffc78b':color,Math.sin(angle)*.15,.09+i%2*.029,Math.cos(angle)*.14,.119+i%3*.052,.14+i%2*.06,.161,{yaw:angle,roll:Math.sin(i)*.19,glow:.21});
     }
   } else {
-    draw(element('sphere',color,x,y+.142,z,.35,.28,.34,{yaw:.64,roll:.22,glow:.29,material:2}));
-    draw(element('sphere','9c734b',x,y+.185,z-.135,.25,.14,.10,{glow:.15}));
+    piece('sphere',color,0,.142,0,.35,.28,.34,{yaw:.64,roll:.22,glow:.29,material:2});
+    piece('sphere','9c734b',0,.185,-.135,.25,.14,.10,{glow:.15});
   }
+}
+function drawFood(food) {
+  if(food.found) return;
+  drawFoodModel(food);
+  const {x,y,z}=food;
   for(let i=0;i<3;i++) {
     const t=time*.65+i*TAU/3;
     const height=y+.34+i*.11+Math.sin(t*2)*.045;
@@ -1711,9 +1799,45 @@ function drawDenLock() {
   }
   draw(element('box',open?'aee5aa':'ffac6b',x+.49,.42,z-.315,.078,.031,.015,{glow:.9}));
 }
+function drawDenFood(food) {
+  const {x,y,z,name,color}=food;
+  if(name==='饼干屑'){
+    draw(element('drum','ae773f',x,y+.050,z,.49,.10,.43,{yaw:.31,glow:.23}));
+    draw(element('drum',color,x,y+.086,z,.43,.050,.38,{yaw:.31,glow:.24}));
+    for(const [dx,dz] of [[-.09,.07],[.10,.028],[.02,-.09],[-.13,-.044],[.06,.11]]){
+      draw(element('sphere','664229',x+dx,y+.111,z+dz,.047,.026,.046));
+    }
+  } else if(name==='面包屑'){
+    draw(element('drum','ae713b',x,y+.095,z,.41,.19,.32,{yaw:-.46,glow:.20}));
+    draw(element('drum','eac07d',x,y+.184,z,.385,.07,.30,{yaw:-.46,glow:.26}));
+    for(const [dx,dz] of [[-.073,-.040],[.086,.054],[.006,.023]]){
+      draw(element('sphere','bb864a',x+dx,y+.217,z+dz,.062,.016,.051));
+    }
+  } else {
+    drawFoodModel(food,1.48);
+    for(const [dx,dy,dz,r] of [[-.10,.095,-.275,.082],[.09,.19,-.277,.071]]){
+      draw(element('sphere','ba7632',x+dx,y+dy,z+dz,r,r,.040,{glow:.22}));
+    }
+  }
+}
+function denCamera(home) {
+  const {origin}=home, {x}=world.home, {depth}=world.level;
+  const elapsed=matchMedia('(prefers-reduced-motion: reduce)').matches?3:(performance.now()-home.arrivedAt)/1000;
+  const ease=value=>{const t=clamp(value,0,1);return t*t*(3-2*t);};
+  const center=ease(elapsed/.56);
+  const z=mix(origin.z,depth+1.75,ease((elapsed-.22)/2.16));
+  const inside=ease((z-depth-1.24)/.51);
+  const eye=mix(mix(origin.y,.235,center),.87,inside);
+  setView(mix(origin.x,x,center)-inside*.18,eye,z,origin.yaw*(1-center)+inside*.082,
+    mix(mix(origin.pitch,-.025,center),-.14,inside));
+}
 function render(dt, filmTime) {
   const inCage=mode==='guest';
-  if(inCage){
+  const home=world.homecoming;
+  const arriving=home?.arrivedAt!=null;
+  if(arriving){
+    denCamera(home);
+  } else if(inCage){
     const {x,z}=world.home;
     setView(x,.32,z+.072,Math.PI+cageWindowYaw,-.035);
   } else if(mode==='menu') {
@@ -1723,12 +1847,15 @@ function render(dt, filmTime) {
     const bob=Math.sin(player.gait*2)*Math.min(.025,player.amount*.005);
     setView(player.x,player.y+player.eye+bob,player.z,player.yaw,player.pitch);
   }
-  const {level}=world;
-  const fog=rgb(level.fog);
+  const inside=arriving&&view.position[2]>world.level.depth+1.21;
+  const level=inside?{...world.level,light:home.light,depth:home.depth}:world.level;
+  const fog=inside?home.fog:rgb(level.fog);
+  const denGlow=!home||inside?0:inCage?Number(Boolean(cageGuest.open)):
+    world.lock.openedAt===null?0:clamp((time-world.lock.openedAt)/.48,0,1);
   const actor=inCage&&cageWindowPose?
     {x:cageWindowPose[7],z:cageWindowPose[8],yaw:cageWindowPose[9],gait:cageWindowPose[10],speed:cageWindowPose[11],phase:cageWindowPose[12]?'hunt':'patrol'}:
     mode==='menu'?{x:3.3+Math.sin(filmTime*.63)*.5,z:5.6,yaw:-2.63,gait:filmTime*1.5,speed:.5,phase:'patrol'}:cat;
-  if(software) softwareStart(level,actor,fog);
+  if(software) softwareStart(level,actor,fog,denGlow);
   else {
     gl.clearColor(...fog,1);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);
     gl.uniformMatrix4fv(shader.View,false,view.matrix);
@@ -1737,8 +1864,13 @@ function render(dt, filmTime) {
     gl.uniform3fv(shader.Fog,fog);
     gl.uniform2f(shader.Room,level.width/2,level.depth);
     gl.uniform3f(shader.Cat,actor.x,actor.z,1);
+    gl.uniform3f(shader.DenGlow,world.home.x,world.home.z,denGlow);
   }
   for(const shape of world.shapes) draw(shape);
+  if(home&&(denGlow||arriving)){
+    for(const shape of home.shapes) draw(shape);
+    for(const food of home.food) drawDenFood(food);
+  }
   drawWater(filmTime);
   drawCan(inCage);
   if(inCage){
@@ -1751,7 +1883,7 @@ function render(dt, filmTime) {
   }
   drawCat(actor,inCage||mode==='menu'?filmTime:time);
   if(software) software.context.putImageData(software.frame,0,0);
-  if(!inCage) drawEffects(dt,filmTime);
+  if(!inCage&&!arriving) drawEffects(dt,filmTime);
   if(mode==='play') updateMarkers();
 }
 const CAT_SAFE_HEIGHT=1.1;
@@ -2335,6 +2467,19 @@ function openDenLock() {
 function closeDenLock() {
   if(mode==='lock') begin(levelIndex,false);
 }
+function releaseDenLock() {
+  world.lock.openedAt=time;
+  world.obstacles=world.obstacles.filter(box=>box!==world.lock.barrier);
+  world.grid=null;
+  cat.repath=0;
+}
+function playUnlockSound() {
+  if(world.homecoming){
+    playTone(145,.094,.125,'triangle',74);
+    playTone(685,.125,.068,'square',230,.03);
+    playTone(275,.21,.060,'triangle',145,.13);
+  } else playTone(455,.30,.11,'sine',805);
+}
 function tryDenCode(event) {
   event.preventDefault();
   if(mode!=='lock') return;
@@ -2357,15 +2502,12 @@ function tryDenCode(event) {
     playTone(163,.18,.08,'triangle',94);
     return;
   }
-  world.lock.openedAt=time;
-  world.obstacles=world.obstacles.filter(box=>box!==world.lock.barrier);
-  world.grid=null;
-  cat.repath=0;
+  releaseDenLock();
   refreshGoal();
   closeDenLock();
   $('lockPrompt').hidden=true;
-  tell('密码正确，墙洞打开了！',2.1);
-  playTone(455,.30,.11,'sine',805);
+  tell(world.homecoming?'门闩打开了。沿着暖光钻回小窝。':'密码正确，墙洞打开了！',2.1);
+  playUnlockSound();
 }
 function sniff() {
   if(time<readyAt) return;
@@ -2385,8 +2527,11 @@ function updateGoals() {
   const missing=world.food.filter(food=>!food.found).length;
   const open=world.lock.openedAt!==null;
   if(open && (!cageRound||cageRound.escaped) && time-world.lock.openedAt>=.4 && gap<.29 && player.y<.56) {
-    playTone(500,.33,.13,'sine',850);
-    showModal(levelIndex===levels.length-1?'win':'next');
+    if(world.homecoming) startHomecoming();
+    else {
+      playTone(500,.33,.13,'sine',850);
+      showModal(levelIndex===levels.length-1?'win':'next');
+    }
     return;
   }
   const cageHint=coopHost()?cageHostHint():null;
@@ -2434,9 +2579,9 @@ function audioStart() {
     if(audioContext.state==='suspended') audioContext.resume().catch(()=>{});
   } catch {}
 }
-function playTone(from,length,volume,wave,to=from) {
+function playTone(from,length,volume,wave,to=from,delay=0) {
   if(!audioEnabled||!audioContext||audioContext.state!=='running') return;
-  const start=audioContext.currentTime;
+  const start=audioContext.currentTime+delay;
   const sound=audioContext.createOscillator(), envelope=audioContext.createGain();
   sound.type=wave;sound.frequency.setValueAtTime(from,start);
   sound.frequency.exponentialRampToValueAtTime(to,start+length);
@@ -2463,6 +2608,35 @@ function lockPointer() {
     if(request && typeof request.catch==='function') request.catch(()=>{});
   } catch {}
 }
+function startHomecoming() {
+  const home=world.homecoming;
+  if(!home||home.arrivedAt!==null) return;
+  const inCage=mode==='guest';
+  const {x,z}=world.home;
+  home.arrivedAt=performance.now();
+  home.origin=inCage?{x,y:.30,z:z+.07,yaw:0,pitch:0}:
+    {x:player.x,y:player.y+player.eye,z:player.z,yaw:angleDiff(0,player.yaw),pitch:player.pitch};
+  playTone(349,.34,.055,'sine',349,.74);
+  playTone(440,.39,.052,'sine',440,1.02);
+  playTone(523,.58,.064,'sine',523,1.29);
+  if(inCage) return;
+  mode='homecoming';pressed.clear();drag=null;unlockPointer();
+  $('hud').hidden=true;
+  paint?.clearRect(0,0,viewportWidth,viewportHeight);
+  setText('denTitle','到家了');
+  setText('denCopy',coopHost()?'你们把奶酪带回了小窝。':'你把奶酪、面包屑和饼干屑带回了小窝。');
+  setText('denContinue',coopHost()?'换位并开始下一关':'前往洗衣房');
+  $('denEnding').hidden=false;
+  $('denContinue').focus({preventScroll:true});
+  cageSnapshot();
+}
+function continueFromDen() {
+  if(mode!=='homecoming') return;
+  if(coopHost()){
+    showModal('next');
+    swapToCage();
+  } else begin(levelIndex+1);
+}
 function showModal(reason) {
   const coopCopy={
     paused:['联机暂停','在墙边歇一会儿','队友也暂停了。靠近笼子后，举爪传门灯状态，再照奶酪顺序传图案。','继续','重开本关'],
@@ -2481,6 +2655,7 @@ function showModal(reason) {
   }
   const [tag,title,copy,action,other]=panel;
   mode=reason;pressed.clear();drag=null;unlockPointer();
+  $('denEnding').hidden=true;
   setText('modalTag',tag);setText('modalTitle',title);
   setText('modalCopy',copy);setText('modalOther',other);
   $('modalAction').firstChild.nodeValue=ui(action);
@@ -2496,6 +2671,7 @@ function begin(index,reset=true) {
   if(reset) createLevel(index);
   mode='play';pressed.clear();drag=null;
   $('menu').hidden=true;$('modal').hidden=true;$('lockScreen').hidden=true;
+  $('denEnding').hidden=true;
   $('hud').hidden=false;$('hud').inert=false;
   if(document.activeElement instanceof HTMLElement) document.activeElement.blur();
   audioStart();lockPointer();
@@ -2509,6 +2685,7 @@ function homeMenu() {
   document.body.classList.remove('coop-playing');
   unlockPointer();pressed.clear();drag=null;createLevel(0);
   mode='menu';$('hud').hidden=true;$('modal').hidden=true;$('menu').hidden=false;
+  $('denEnding').hidden=true;
   if(hadWindow) resize();
   $('start').focus({preventScroll:true});
 }
@@ -2535,6 +2712,7 @@ function inputs() {
   $('start').addEventListener('click',()=>begin(selectedLevel()));
   $('climbPrompt').addEventListener('click',startClimbing);
   $('pushCanPrompt').addEventListener('click',pushCan);
+  $('denContinue').addEventListener('click',continueFromDen);
   $('pause').addEventListener('click',()=>showModal('paused'));
   $('lockPrompt').addEventListener('click',openDenLock);
   $('closeLock').addEventListener('click',closeDenLock);
@@ -2982,13 +3160,11 @@ function acceptCageGuess(message) {
     sendRoom({type:'feedback',round:cageRound.id,text:feedback,problem});
     return;
   }
-  world.lock.openedAt=time;
-  world.obstacles=world.obstacles.filter(box=>box!==world.lock.barrier);
-  world.grid=null;cat.repath=0;
+  releaseDenLock();
   $('coopSignals').hidden=true;
   refreshGoal();
   tell('笼门开了！等队友跑到出口。',2.15);
-  playTone(455,.30,.11,'sine',805);
+  playUnlockSound();
   cageSnapshot();
 }
 function acceptCageReply(replyId) {
@@ -3222,7 +3398,11 @@ function updateCageView(state) {
   }
   if(justOpened) {
     setText('cageFeedback','开锁成功。走到绿色出口！');
-    playTone(455,.30,.11,'sine',805);
+    playUnlockSound();
+  }
+  if(mode==='guest'&&state.phase==='homecoming'){
+    startHomecoming();
+    setText('cageWindowStatus','到家了');
   }
   setText('cageChapter','第 '+(state.index+1)+' 关 · 笼内');
   setText('cageTitle',levels[state.index].title);
@@ -3250,7 +3430,7 @@ function updateCageView(state) {
   if(newCage||active!==(prior.phase==='play'&&!prior.open)||state.powered!==prior.powered||state.found!==prior.found){
     renderCageMechanism();
   }
-  const notices={paused:'队友暂停了游戏。',caught:'队友被猫抓住了，等待重新开始。',next:'通关了！下一关你在笼外，等队友点继续。',win:'到达终点！你们一起回到了墙缝。'};
+  const notices={paused:'队友暂停了游戏。',caught:'队友被猫抓住了，等待重新开始。',homecoming:'你们回到小窝了。等队友继续。',next:'通关了！下一关你在笼外，等队友点继续。',win:'到达终点！你们一起回到了墙缝。'};
   const notice=notices[state.phase];
   $('cageNotice').hidden=!notice;
   setText('cageNotice',notice||'');
