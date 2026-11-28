@@ -1044,6 +1044,12 @@ function initGL() {
         base=mix(base,base*vec3(.61,.48,.42),stripe*.86);
         base=mix(base,light*vec3(.90,.82,.68),smoothstep(.76,.88,along));
       }
+      if(uMaterial>6.5&&uMaterial<7.5){
+        float flowing=vLocal.z*20.0+3.2*vLocal.y*vLocal.y+
+          .50*sin(vLocal.y*12.0+vLocal.z*5.0);
+        float stripes=smoothstep(.56,.84,cos(flowing))*smoothstep(-.37,.02,vLocal.y);
+        base*=mix(vec3(1.0),vec3(.66,.48,.38),stripes*.84);
+      }
       float depth=distance(vPosition,uEye);
       float haze=clamp(1.0-exp(-depth*depth*0.00155),0.0,0.66);
       vec3 sceneColor=mix(base,uFog,haze*(1.0-0.45*uEmissive));
@@ -1074,10 +1080,20 @@ function initGL() {
   gl.enable(gl.DEPTH_TEST);
   gl.enableVertexAttribArray(shader.position);
   gl.enableVertexAttribArray(shader.normal);
-  meshes={catTail:upload(catTailVertices()),cheese:upload(cheeseVertices()),box:upload(boxVertices()), sphere:upload(roundVertices(12,7)), tube:upload(tubeVertices(14,1)), cone:upload(tubeVertices(12,0)), drum:upload(tubeVertices(12,.79))};
+  meshes={flame:upload(flameVertices(12,8)),catTail:upload(catTailVertices()),cheese:upload(cheeseVertices()),box:upload(boxVertices()), sphere:upload(roundVertices(12,7)), tube:upload(tubeVertices(14,1)), cone:upload(tubeVertices(12,0)), drum:upload(tubeVertices(12,.79))};
 }
 function vertexData(target,position,normal) {
   target.push(...position,...normal);
+}
+function flameVertices(sides,rings){
+  const mesh=roundVertices(sides,rings);
+  for(let i=0;i<mesh.length;i+=6){
+    const height=mesh[i+1]+.5;
+    const taper=1.22-.84*height;
+    mesh[i]=mesh[i]*taper+.23*height*height;
+    mesh[i+2]*=taper;
+  }
+  return mesh;
 }
 function catTailVertices(){
   const rings=15,sides=10,vertices=[];
@@ -1702,6 +1718,9 @@ function buildStoveCourse(){
     box('e7bd79',ramp.x,ramp.y1-.018,ramp.z1-.045,1.16,.029,.082,{glow:.16});
   }
   box('b59570',lane,.945,5.085,1.24,.11,.09,wood);
+  for(const [y,z] of [[1.006,5.105],[1.119,5.83]]){
+    for(const x of [4.33,5.37])box('bb9e70',x,y,z,.13,.014,.09,{glow:.12,material:5});
+  }
   solid('ae8968',lane,cabinetSecond-.065,7.39,2.05,.13,.90,{...wood,cover:true});
   box('b59570',lane,cabinetSecond-.055,6.825,1.24,.11,.23,wood);
   climbRail(lane,7.15,cabinetSecond,cabinetThird);
@@ -1901,9 +1920,11 @@ function drawStoveCourse(t){
       for(let j=0;j<12;j++){
         const a=j*TAU/12, height=.09+.043*(1+Math.sin(t*8.4+j*2.1));
         const x=h.x+.246*Math.cos(a),z=h.z+.246*Math.sin(a);
-        piece('sphere','4ea5b7',x,stoveTop+.098+height*.25,z,.060,height*.83,.060,{glow:.72});
-        piece('cone',j%4===0?'ebae66':'9dd8d3',x,stoveTop+.10+height*.67,z,.046,height*.78,.046,
-          {glow:.78,roll:Math.sin(t*7+j)*.17});
+        const lean=Math.sin(t*6.2+j)*.18;
+        piece('flame',j%4===0?'acb993':'55abc2',x,stoveTop+.096+height*.5,z,.063,height,.060,
+          {glow:.82,roll:lean,yaw:-a});
+        piece('flame','c1e2cd',x,stoveTop+.10+height*.29,z,.026,height*.51,.023,
+          {glow:.88,roll:lean*.75,yaw:-a});
       }
     }else{
       piece('box','bf9162',h.x,stoveTop+.02,h.z,.53,.04,.57);
@@ -1925,7 +1946,7 @@ function initSoftware() {
   if(!context) throw Error('Canvas unavailable');
   surface.hidden=false;
   software={
-    surface,context,geometry:{catTail:catTailVertices(),cheese:cheeseVertices(),box:boxVertices(),sphere:roundVertices(8,5),tube:tubeVertices(9,1),cone:tubeVertices(8,0),drum:tubeVertices(8,.79)},
+    surface,context,geometry:{flame:flameVertices(8,5),catTail:catTailVertices(),cheese:cheeseVertices(),box:boxVertices(),sphere:roundVertices(8,5),tube:tubeVertices(9,1),cone:tubeVertices(8,0),drum:tubeVertices(8,.79)},
     objects:new WeakMap(),width:0,height:0,frame:null,pixels:null,depth:null
   };
 }
@@ -2238,10 +2259,12 @@ function catPart(type,color,x,y,z,w,h,d,extra={}) {
 }
 function setupCat() {
   catShapes=[];
+  catAnimation.pace=0;
+  catAnimation.crouch=0;
   const fur='d49050', dark='a35d38', stripe='854626', white='eed9b9';
-  catPart('sphere',fur,0,.77,-.02,.80,.88,1.57);
-  catPart('sphere',dark,0,.82,-.55,.77,.77,.84);
-  catPart('sphere',fur,0,.92,.44,.76,.91,.82);
+  catPart('sphere',fur,0,.77,-.02,.80,.88,1.57,{material:7});
+  catPart('sphere','c78750',0,.79,-.48,.72,.76,.75,{material:7});
+  catPart('sphere',fur,0,.88,.42,.72,.84,.79,{material:7});
   catPart('sphere',white,0,.79,.68,.54,.53,.53);
   catPart('sphere',fur,0,1.155,.77,.76,.68,.67);
   for(const side of [-1,1]) {
@@ -2250,16 +2273,11 @@ function setupCat() {
     catPart('sphere',white,side*.207,1.277,1.025,.17,.045,.085,{roll:side*.13});
     catPart('cone','de9d87',side*.273,1.57,.855,.155,.29,.08,{roll:side*-.31});
     catPart('sphere','352d28',side*.188,1.222,1.041,.206,.143,.073);
-    catPart('sphere','b5cb83',side*.185,1.228,1.073,.130,.100,.038,{glow:.88});
-    catPart('sphere','2a2724',side*.185,1.228,1.095,.028,.084,.017,{glow:.40});
+    catPart('sphere','b5cb83',side*.185,1.228,1.073,.130,.100,.038,{glow:.78,blink:true});
+    catPart('sphere','2a2724',side*.185,1.228,1.095,.028,.084,.017,{glow:.40,blink:true});
     catPart('sphere',white,side*.109,1.055,1.065,.244,.204,.16);
     for(let i=0;i<3;i++) catPart('box','b8a79a',side*.256,1.055+(i-1)*.035,1.11,.30,.009,.01,{roll:side*(i-1)*.16});
-    for(const z of [-.50,.45]) {
-      const gaitSign=side*Math.sign(z);
-      catPart('sphere',z>0?fur:dark,side*.247,.386,z,.243,.684,.25,{gaitSign});
-      catPart('sphere',white,side*.247,.135,z+.072,.23,.20,.33,{gaitSign});
-    }
-    for(const z of [-.37,.05,.37]) catPart('sphere',stripe,side*.325,.918,z,.19,.44,.12,{roll:side*.25});
+
   }
   catPart('sphere','bd8179',0,1.104,1.164,.139,.085,.062);
 
@@ -2296,20 +2314,47 @@ function draw(item) {
   gl.uniform1f(shader.Emissive,item.glow||0);
   gl.drawArrays(gl.TRIANGLES,0,mesh.count);
 }
-function drawCat(actor, animationTime) {
+const catAnimation={pace:0,crouch:0};
+function drawCat(actor, animationTime, dt) {
   const cosine=Math.cos(actor.yaw), sine=Math.sin(actor.yaw);
-  const bob=Math.sin(actor.gait*2)*.025*Math.min(actor.speed,1);
-  const prowl=actor.lunge?.stage==='brace'?.32:actor.lunge?.stage==='slide'?.24:actor.search?.stage==='guard'?.29:actor.phase==='hunt'?.12:0;
+  const settle=1-Math.exp(-Math.max(0,dt)*15);
+  const crouch=actor.lunge?.stage==='brace'?.28:actor.lunge?.stage==='slide'?.23:
+    actor.search?.stage==='guard'?.24:actor.phase==='hunt'?.16:0;
+  catAnimation.pace=mix(catAnimation.pace,actor.speed,settle);
+  catAnimation.crouch=mix(catAnimation.crouch,crouch,settle);
+  const pace=catAnimation.pace, prowl=catAnimation.crouch, rush=clamp((pace-2.25)/2.4,0,1);
+  const bob=Math.cos(actor.gait*2)*(.016+.026*rush)*Math.min(pace,1);
+  const breath=.009*Math.sin(animationTime*4)*(1-clamp(pace,0,1));
+  const blinkPhase=(animationTime+.4)%4.7;
+  const lids=blinkPhase<.16?1-.95*Math.sin(blinkPhase*Math.PI/.16):1;
+  const at=(x,z)=>[actor.x+x*cosine+z*sine,actor.z-x*sine+z*cosine];
+
   for(const part of catShapes) {
-    const stride=part.gaitSign ? Math.sin(actor.gait)*part.gaitSign*Math.min(actor.speed*.13,.25) : 0;
-    const x=part.x, z=part.z+stride;
-    const y=part.y+bob-prowl*(part.y>.60?1:0);
-    const matrix=model(actor.x+x*cosine+z*sine,y,actor.z-x*sine+z*cosine,part.scale,actor.yaw,part.gaitSign ? stride*.85 : 0,part.roll||0);
-    draw({...part,matrix});
+    const [x,z]=at(part.x,part.z);
+    const height=part.y+bob+breath-prowl*(part.z>.38?1:.68);
+    const scale=part.blink?[part.scale[0],part.scale[1]*lids,part.scale[2]]:part.scale;
+    const pitch=part.z>.38?prowl*.23+.03*bob:0;
+    draw({...part, matrix:model(x,height,z,scale,actor.yaw,pitch,part.roll||0)});
   }
-  const tailYaw=actor.yaw+Math.sin(animationTime*2.8)*.22;
-  draw(element('catTail','ce8a4f',actor.x-sine*.67,.79+bob-prowl,actor.z-cosine*.67,
-    1,1,1,{yaw:tailYaw,material:6}));
+  for(const side of [-1,1])for(const front of [false,true]){
+    const offset=front?0:Math.PI-rush*.85;
+    const phase=actor.gait+(side===1?offset:Math.PI+offset);
+    const stride=Math.sin(phase)*Math.min(pace*.082,.31);
+    const lift=Math.max(0,Math.cos(phase))*Math.min(pace*.035,.16);
+    const legX=side*.247, hipZ=front?.43:-.47;
+    const hipY=(front?.69:.63)+bob-prowl*(front?.90:.42);
+    const footZ=hipZ+stride+(front?.035:-.065);
+    const midY=(hipY+.14+lift)*.5, midZ=(hipZ+footZ)*.5;
+    const [x,z]=at(legX,midZ);
+    const bend=Math.atan2(hipZ-footZ,Math.max(.1,hipY-.14-lift));
+    const length=Math.hypot(hipY-.14-lift,hipZ-footZ)+.18;
+    draw(element('sphere',front?'cf925a':'ba7e53',x,midY,z,.215,length,.24,{yaw:actor.yaw,pitch:bend}));
+    const [px,pz]=at(legX,footZ+.06);
+    draw(element('sphere','e1cfb1',px,.111+lift,pz,.23,.16,.31,{yaw:actor.yaw,pitch:-lift}));
+  }
+  const tailYaw=actor.yaw+Math.sin(animationTime*2.8)*mix(.23,.11,rush);
+  draw(element('catTail','ce8a4f',actor.x-sine*.67,.79+bob-prowl*.68,actor.z-cosine*.67,
+    1,.98-rush*.22,1,{yaw:tailYaw,material:6}));
 }
 function drawFoodModel(food,scale=1) {
   const {x,y,z,name,color}=food;
@@ -2476,7 +2521,7 @@ function render(dt, filmTime) {
     else drawDenLock();
     for(const food of world.food) drawFood(food);
   }
-  drawCat(actor,inCage||mode==='menu'?filmTime:time);
+  drawCat(actor,inCage||mode==='menu'?filmTime:time,dt);
   if(software){
     if(cabinetFade>.006)shadeSoftwareCabinet(cabinetFade,crack);
     software.context.putImageData(software.frame,0,0);
@@ -2741,12 +2786,15 @@ function updatePlayer(dt) {
     return false;
   }
   if(course?.slideAt!=null){
-    const t=clamp((time-course.slideAt)/.55,0,1);
-    player.x=slideStart.x;
-    player.z=mix(slideStart.z,slideEnd.z,t);
-    player.y=mix(slideStart.y,slideEnd.y,t);
-    player.yaw+=angleDiff(player.yaw,0)*(1-Math.exp(-dt*13));
-    player.pitch=mix(player.pitch,-.20,1-Math.exp(-dt*11));
+    const t=clamp((time-course.slideAt)/.63,0,1);
+    const motion=t*t*(3-2*t);
+    player.x=mix(course.slideFromX,slideEnd.x,motion);
+    player.z=mix(course.slideFromZ,slideEnd.z,motion);
+    player.y=mix(slideStart.y,slideEnd.y,motion);
+    const settle=1-Math.exp(-dt*11);
+    player.yaw+=angleDiff(player.yaw,0)*settle;
+    player.pitch=mix(player.pitch,-.16*Math.sin(t*Math.PI),settle);
+    player.eye=.323-.09*Math.sin(t*Math.PI);
     if(t===1){course.slideAt=null;player.ground=true;}
     return false;
   }
@@ -2790,6 +2838,10 @@ function updatePlayer(dt) {
   if(course&&forward>0&&player.ground&&Math.abs(player.y-cabinetTop)<.035&&
       Math.abs(player.x-slideStart.x)<.49&&player.z>=slideStart.z&&player.z<8.18){
     course.slideAt=time;
+    course.slideFromX=player.x;
+    course.slideFromZ=player.z;
+    player.vY=0;
+    player.amount=0;
     playTone(146,.27,.06,'triangle',57);
     return false;
   }
