@@ -904,7 +904,7 @@ const levels = [
     title:'洗衣房的高架', intro:'左架有食物。右侧钻桌角，穿过灶台去吊灯。',
     coopIntro:'检查左侧高架和右侧吊灯，找齐奶酪图案。',
     width:14, depth:18.8, spawn:[-2.92,1.44,0], home:[2.62,18.37],
-    light:[-1.95,4.5,10.9], fog:'343d55',
+    light:[-1.95,4.32,10.9], fog:'29363d',
     food:[[5.46,16.68,'饼干屑','dfa96e',3.70],[-3.38,10.46,'松子','eac47a',2.24],[-2.66,14.37,'奶酪','ffbe60',2.24]],
     patrol:[[1.7,3.66],[4.65,6.5],[4.75,11.1],[4.4,15.45],[2,16.8],[0,17.05],
       [-2.2,17.08],[-5.13,16.65],[-4.99,14.76],[-5.37,12.64],[-5.45,8.7],
@@ -958,6 +958,7 @@ function initGL() {
     uniform vec3 uCat;
     uniform vec3 uDenGlow;
     uniform vec2 uCabinetLight;
+    uniform float uLaundry;
     uniform vec2 uRoom;
     uniform sampler2D uShade;
     uniform float uEmissive;
@@ -986,6 +987,15 @@ function initGL() {
       float wash=1.0/(1.0+dot(delta,delta)*0.033);
       vec3 light=vec3(0.48,0.55,0.60)+cool*vec3(0.23,0.33,0.39)+wash*(0.16+key)*vec3(1.35,0.88,0.48);
       vec3 p=vPosition;
+      if(uLaundry>.5){
+        vec3 windowLight=vec3(-1.48,3.03,18.15)-p;
+        float windowFacing=max(dot(normal,normalize(windowLight)),0.0);
+        float moonlight=(.10+.67*windowFacing)/(1.0+dot(windowLight,windowLight)*.045);
+        vec3 stoveLight=vec3(5.35,4.02,9.57)-p;
+        float stoveFacing=max(dot(normal,normalize(stoveLight)),0.0);
+        float warm=(.095+.61*stoveFacing)/(1.0+dot(stoveLight,stoveLight)*.28);
+        light=light*.89+moonlight*vec3(.29,.59,.80)+warm*vec3(1.24,.74,.34);
+      }
       if (uDenGlow.z>0.0) {
         vec2 offset=p.xz-uDenGlow.xy;
         vec2 spread=vec2(0.39+max(0.0,-offset.y)*0.48,1.35);
@@ -1023,6 +1033,17 @@ function initGL() {
         vec3 halfDir=normalize(normalize(delta)+normalize(uEye-p));
         base+=vec3(.22,.16,.095)*wash*pow(max(dot(normal,halfDir),0.),18.);
       }
+      if(uMaterial>4.5&&uMaterial<5.5){
+        vec3 reflection=normalize(normalize(delta)+normalize(uEye-p));
+        float sheen=pow(max(dot(normal,reflection),0.0),14.0);
+        base+=vec3(.19,.22,.20)*(.20+.8*wash)*sheen;
+      }
+      if(uMaterial>5.5&&uMaterial<6.5){
+        float along=-vLocal.z;
+        float stripe=smoothstep(.37,.85,cos(along*31.0));
+        base=mix(base,base*vec3(.61,.48,.42),stripe*.86);
+        base=mix(base,light*vec3(.90,.82,.68),smoothstep(.76,.88,along));
+      }
       float depth=distance(vPosition,uEye);
       float haze=clamp(1.0-exp(-depth*depth*0.00155),0.0,0.66);
       vec3 sceneColor=mix(base,uFog,haze*(1.0-0.45*uEmissive));
@@ -1033,7 +1054,7 @@ function initGL() {
         float slit=1.0-smoothstep(.16,1.0,abs(p.z-4.83)/beamWidth);
         float beam=uCabinetLight.y*step(-.06,fromCrack)*slit*
           (1.0-smoothstep(.14,1.37,fromCrack))*(1.0-smoothstep(1.25,1.78,p.y));
-        float eyeGlow=step(3.5,uMaterial);
+        float eyeGlow=1.0-step(.5,abs(uMaterial-4.0));
         vec3 cabinetColor=sceneColor*(adapted+beam*vec3(.91,.67,.41));
         sceneColor=mix(sceneColor,mix(cabinetColor,uColor,eyeGlow*.80),uCabinetLight.x);
       }
@@ -1046,17 +1067,37 @@ function initGL() {
   if (!gl.getProgramParameter(program,gl.LINK_STATUS)) throw Error(gl.getProgramInfoLog(program));
   gl.useProgram(program);
   const uniforms={};
-  for (const name of ['Model','View','Scale','Color','Eye','Lamp','Fog','Room','Cat','Emissive','Material','DenGlow','CabinetLight']) {
+  for (const name of ['Model','View','Scale','Color','Eye','Lamp','Fog','Room','Cat','Emissive','Material','DenGlow','CabinetLight','Laundry']) {
     uniforms[name]=gl.getUniformLocation(program,'u'+name);
   }
   shader={...uniforms,position:gl.getAttribLocation(program,'aPosition'),normal:gl.getAttribLocation(program,'aNormal')};
   gl.enable(gl.DEPTH_TEST);
   gl.enableVertexAttribArray(shader.position);
   gl.enableVertexAttribArray(shader.normal);
-  meshes={cheese:upload(cheeseVertices()),box:upload(boxVertices()), sphere:upload(roundVertices(12,7)), tube:upload(tubeVertices(14,1)), cone:upload(tubeVertices(12,0)), drum:upload(tubeVertices(12,.79))};
+  meshes={catTail:upload(catTailVertices()),cheese:upload(cheeseVertices()),box:upload(boxVertices()), sphere:upload(roundVertices(12,7)), tube:upload(tubeVertices(14,1)), cone:upload(tubeVertices(12,0)), drum:upload(tubeVertices(12,.79))};
 }
 function vertexData(target,position,normal) {
   target.push(...position,...normal);
+}
+function catTailVertices(){
+  const rings=15,sides=10,vertices=[];
+  const ring=(i,j)=>{
+    const t=i/rings,a=j/sides*TAU;
+    const slope=.80*t/.89, length=Math.hypot(1,slope);
+    const u=Math.cos(a),v=Math.sin(a);
+    const radius=i===rings?.005:mix(.122,.062,t);
+    const normal=[u,v/length,v*slope/length];
+    return {
+      position:[.12*t*t+radius*normal[0],.40*t*t+.27*t+radius*normal[1],-.89*t+radius*normal[2]],
+      normal
+    };
+  };
+  for(let i=0;i<rings;i++)for(let j=0;j<sides;j++){
+    for(const point of [ring(i,j),ring(i,j+1),ring(i+1,j+1),ring(i,j),ring(i+1,j+1),ring(i+1,j)]){
+      vertexData(vertices,point.position,point.normal);
+    }
+  }
+  return vertices;
 }
 function cheeseVertices(){
   const vertices=[],rim=[[-.50,-.44],[.50,-.44],[.46,-.17],[.32,.15],[.09,.40],[-.12,.50]];
@@ -1508,10 +1549,23 @@ function buildSinkDen() {
 }
 function laundryRoom() {
   const x=-2.92, lower=1.15, upper=2.24;
-  solid('827b83',x,lower*.5,5.04,3.07,lower,2.9);
-  place('tube','393847',x,.56,3.57,.88,.12,.88,{pitch:Math.PI*.5});
-  place('tube','535d71',x,.56,3.49,.69,.045,.69,{pitch:Math.PI*.5,glow:.17});
-  box('d6b992',x+.72,1.00,3.54,.56,.094,.09);
+  solid('a4ad9e',x,lower*.5,5.04,3.07,lower,2.9,{material:5});
+  box('535e58',x,.10,3.565,3.00,.17,.08,{material:5});
+  box('bac4b6',x,.89,3.563,3.00,.34,.085,{material:5});
+  box('d2cdad',x,1.121,5.04,3.11,.056,2.94,{material:5});
+  box('7a8d87',x,1.072,3.525,2.96,.035,.035);
+  // Door trim, rubber gasket and tinted glass sit on separate planes.
+  const front={pitch:Math.PI*.5,material:5}, windowX=x-.52;
+  for(const [color,size,z] of [['75877f',.94,3.541],['d0d1bb',.86,3.49],['2f3b39',.73,3.435],['455e61',.61,3.404]]){
+    place('tube',color,windowX,.47,z,size,.060,size,front);
+  }
+  place('sphere','85a6a7',windowX-.10,.58,3.369,.29,.052,.019,{roll:-.28,glow:.21});
+  box('c3c8b0',windowX+.396,.47,3.445,.09,.19,.10,{material:5});
+  box('697d76',x-1.00,.916,3.498,.53,.18,.037,{material:5});
+  box('c7cbb4',x-1.00,.880,3.471,.36,.031,.018);
+  place('tube','677972',x+.78,.928,3.482,.24,.066,.24,front);
+  box('e2cf99',x+.78,.985,3.442,.025,.060,.016,{glow:.26});
+  for(let i=0;i<4;i++)box(i===0?'c1c98e':'7a8980',x+.19+i*.088,.933,3.507,.034,.022,.02,{glow:i===0?.52:0});
   climbRail(x,3.59,0,lower);
   solid('9d765d',x,lower-.078,7.81,1.97,.156,2.66,{material:2});
   for(const dx of [-.84,.84]) solid('67565b',x+dx,.555,8.93,.115,1.11,.14);
@@ -1536,6 +1590,38 @@ function laundryRoom() {
   for(const z of [5.95,8.85]) box('b68c69',2.75,.035,z,3.07,.025,.08,{material:3});
   buildStoveCourse();
   makeWindow(-1.48,18.64,2.73,1.72,2.95);
+  dressLaundryRoom();
+}
+function dressLaundryRoom(){
+  // Service pipes and cable clips follow the walls, clear of the playable aisle.
+  for(const [x,color] of [[-6.75,'536b66'],[-6.51,'a28a63']]){
+    pipe(x,5.35,2.27,4.38,color);
+    box(color,x,4.41,10.15,.14,.15,9.60,{material:5});
+    for(const z of [6.22,8.62,11.01,13.42,14.70])box('425954',x,4.43,z,.20,.20,.10,{material:5});
+  }
+  box('354f49',-1.48,1.57,18.55,3.30,.24,.19,{material:2});
+  for(const x of [-2.90,-.064])box('627c70',x,1.40,18.54,.11,.37,.22);
+  for(const [x,color,h] of [[-2.46,'8eaf9b',.43],[-2.12,'c19a6d',.32],[-.64,'ae9b89',.40]]){
+    place('drum',color,x,1.70+h*.5,18.43,.25,h,.21,{material:5});
+    place('tube','b9b69a',x,1.70+h,18.43,.15,.075,.15,{material:5});
+  }
+  // Glazed backsplash and a lamp match the stove's green enamel.
+  box('384a45',6.88,2.90,10.17,.14,1.11,4.35);
+  for(let row=0;row<3;row++)for(let col=0;col<10;col++){
+    const tile=['96a395','8e9b8c','9ba99a','899e93'][(2*row+col*3)%4];
+    box(tile,6.795,2.53+row*.36,8.26+col*.421,.041,.337,.398,{material:5});
+  }
+  box('a09c7a',6.78,3.46,10.16,.08,.062,4.43,{material:5});
+  place('tube','5a6251',5.35,4.45,9.57,.064,.38,.064,{material:5});
+  place('drum','4f6e62',5.35,4.15,9.57,.88,.25,.88,{material:5});
+  place('tube','ffdaad',5.35,4.016,9.57,.70,.038,.70,{glow:.92});
+  // A wall-mounted valve and hot-water lines make the far wall readable at floor level.
+  for(const z of [13.20,13.54])pipe(6.70,z,2.01,4.02,'937451');
+  const valve={roll:Math.PI*.5,material:5};
+  place('tube','ab8861',6.64,1.18,13.20,.31,.13,.31,valve);
+  place('tube','b87762',6.55,1.18,13.20,.29,.044,.29,valve);
+  box('c2a77a',6.51,1.18,13.2,.03,.29,.048);
+  box('c2a77a',6.51,1.18,13.2,.03,.048,.29);
 }
 const panCenter={x:4.75,z:13.90};
 const stoveDangers=[
@@ -1572,6 +1658,20 @@ function buildStoveCourse(){
   solid('71533e',6.06,1.79,5.10,.16,2.26,5.75,wood);
   for(const z of [2.42,7.70])for(const x of [3.76,5.94])
     solid('806049',x,.31,z,.18,.62,.20,wood);
+  // Raised panels and joinery stay outside the cabinet's collision shell.
+  for(const z of [2.53,5.11,7.58]){
+    box('75523d',3.521,1.75,z,.095,2.25,.126,wood);
+    for(const y of [.76,2.76])place('sphere','aa8457',3.462,y,z,.025,.05,.05,{material:5});
+  }
+  for(const [z,length] of [[2.87,1.04],[6.42,2.54]]){
+    box('664937',3.543,1.66,z,.027,1.38,length,wood);
+    box('91684b',3.515,1.66,z,.035,1.20,length-.18,wood);
+    for(const y of [1.05,2.27])box('b08761',3.491,y,z,.028,.053,length-.19,wood);
+  }
+  for(const y of [.62,2.89])box('a27855',3.494,y,5.08,.118,.12,5.54,wood);
+  box('ac8760',lane,2.86,2.164,2.65,.16,.11,wood);
+  box('73533b',lane,1.40,2.14,2.15,1.19,.045,wood);
+  box('986d50',lane,1.40,2.108,1.94,1.00,.05,wood);
   const entry={lower:{...cabinetHatch,y:0},upper:{x:lane,y:cabinetFirst,z:3.83},face:0,throughFloor:true};
   world.climbs.push(entry);
   for(const x of [4.59,5.11])box('d1a160',x,.34,2.96,.07,.68,.075);
@@ -1581,7 +1681,11 @@ function buildStoveCourse(){
     box(color,x,cabinetFirst+h/2,z,.34,h,.39,wood);
     box('dec8a3',x,cabinetFirst+h*.58,z-.198,.14,.09,.015);
   }
-  for(let i=0;i<6;i++)box('af8f63',4.02+i*.13,.008,3.18,.075,.014,.032,{glow:.19});
+  for(const z of [2.73,3.71])box('b78d60',lane,.536,z,1.12,.048,.082,wood);
+  for(let i=0;i<5;i++){
+    const x=3.97+i*.16;
+    box('9d7751',x,.012,3.11+i*.018,.13,.021,.052,{yaw:i*.33,material:2});
+  }
 
   // The free end of the second board is within an ordinary walking jump.
   for(const ramp of cabinetRamps){
@@ -1629,7 +1733,10 @@ function buildStoveCourse(){
   for(const [x,h,w] of [[lane,-.055,1.04],[lane-.57,.025,.10],[lane+.57,.025,.10]]){
     box(x===lane?'839e96':'d1a466',x,(slideStart.y+slideEnd.y)/2+h,(slideStart.z+slideEnd.z)/2,w,.11,length,{pitch,material:2});
   }
-  solid('758281',lane,stoveTop-.09,9.93,2.65,.18,4.03);
+  solid('7b8c82',lane,stoveTop-.09,9.93,2.65,.18,4.03,{material:5});
+  box('596c61',6.00,stoveTop-.26,9.87,.13,.35,3.82,{material:5});
+  box('364c46',6.00,stoveTop-.62,9.87,.16,.43,3.75,{material:5});
+  for(const z of [8.26,9.88,11.47])box('596958',6.41,stoveTop-.59,z,.95,.12,.15,{material:5});
   box('979f96',lane,stoveTop-.19,7.94,2.64,.21,.08);
   for(const x of [4.03,4.40,5.30,5.67]){
     place('tube','495653',x,stoveTop-.19,7.87,.18,.055,.18,{pitch:Math.PI*.5});
@@ -1646,10 +1753,17 @@ function buildStoveCourse(){
     solid('bb976b',x,y-.07,z,.92,.14,.87,wood);
     box('eac891',x,y+.005,z-.36,.8,.01,.075);
     box('716557',x,y-.23,z,.12,.34,.14);
+    for(const dx of [-.35,.35]){
+      const cable=4.67-y;
+      box('625c4d',x+dx,y+cable*.5,z+.34,.018,cable,.018,{material:5});
+      place('tube','a99a76',x+dx,y+.026,z+.34,.072,.045,.072,{material:5});
+    }
   }
   const lx=5.46,lz=16.68,ly=3.70;
   solid('677e76',lx,ly-.08,lz,1.30,.16,1.26);
-  place('sphere','ffdc97',lx,ly-.29,lz,.80,.48,.80,{glow:.94});
+  place('drum','819184',lx,ly-.188,lz,1.07,.235,1.07,{material:5});
+  place('tube','d3b37c',lx,ly-.306,lz,.89,.033,.89,{material:5});
+  place('sphere','ffdf9f',lx,ly-.329,lz,.66,.26,.66,{glow:.93});
   for(const dx of [-.49,.49])box('625749',lx+dx,4.17,lz,.035,.94,.035);
   climbRail(lx,17.31,0,ly,-1,true);
 }
@@ -1776,10 +1890,20 @@ function drawStoveCourse(t){
   }
   for(const h of stoveDangers){
     if(h.fire){
-      piece('tube','343d40',h.x,stoveTop+.035,h.z,.83,.07,.83);
-      for(let j=0;j<8;j++){
-        const a=j*Math.PI/4;
-        piece('cone',j%2?'f7ad51':'63b8df',h.x+.29*Math.cos(a),stoveTop+.16,h.z+.29*Math.sin(a),.12,.22+.065*Math.sin(t*7+j),.12,{glow:.9});
+      piece('tube','303a36',h.x,stoveTop+.03,h.z,.84,.06,.84,{material:5});
+      piece('tube','58645d',h.x,stoveTop+.068,h.z,.54,.044,.54,{material:5});
+      piece('tube','353e3a',h.x,stoveTop+.097,h.z,.38,.058,.38,{material:5});
+      for(let arm=0;arm<4;arm++){
+        const a=arm*Math.PI/2+.28;
+        piece('box','48504a',h.x+Math.sin(a)*.39,stoveTop+.133,h.z+Math.cos(a)*.39,
+          .095,.092,.23,{yaw:a,material:5});
+      }
+      for(let j=0;j<12;j++){
+        const a=j*TAU/12, height=.09+.043*(1+Math.sin(t*8.4+j*2.1));
+        const x=h.x+.246*Math.cos(a),z=h.z+.246*Math.sin(a);
+        piece('sphere','4ea5b7',x,stoveTop+.098+height*.25,z,.060,height*.83,.060,{glow:.72});
+        piece('cone',j%4===0?'ebae66':'9dd8d3',x,stoveTop+.10+height*.67,z,.046,height*.78,.046,
+          {glow:.78,roll:Math.sin(t*7+j)*.17});
       }
     }else{
       piece('box','bf9162',h.x,stoveTop+.02,h.z,.53,.04,.57);
@@ -1788,7 +1912,9 @@ function drawStoveCourse(t){
       piece('box','adb1aa',h.x,stoveTop+.205,h.z-.19,.44,.035,.035);
     }
   }
-  piece('drum','566169',panCenter.x,2.48,panCenter.z,1.13,.24,1.13);
+  piece('drum','344840',panCenter.x,2.475,panCenter.z,1.13,.23,1.13,{material:5});
+  piece('tube','62776d',panCenter.x,2.381,panCenter.z,1.143,.042,1.143,{material:5});
+  piece('tube','b0ad85',panCenter.x,2.59,panCenter.z,.79,.018,.79,{material:5});
   piece('box','ae8962',panCenter.x+Math.sin(c.angle)*1.05,2.56,panCenter.z+Math.cos(c.angle)*1.05,.32,.08,2.08,{yaw:c.angle});
 }
 const levelScenes={kitchen,pantry,sink:sinkRoom,laundry:laundryRoom};
@@ -1799,7 +1925,7 @@ function initSoftware() {
   if(!context) throw Error('Canvas unavailable');
   surface.hidden=false;
   software={
-    surface,context,geometry:{cheese:cheeseVertices(),box:boxVertices(),sphere:roundVertices(8,5),tube:tubeVertices(9,1),cone:tubeVertices(8,0),drum:tubeVertices(8,.79)},
+    surface,context,geometry:{catTail:catTailVertices(),cheese:cheeseVertices(),box:boxVertices(),sphere:roundVertices(8,5),tube:tubeVertices(9,1),cone:tubeVertices(8,0),drum:tubeVertices(8,.79)},
     objects:new WeakMap(),width:0,height:0,frame:null,pixels:null,depth:null
   };
 }
@@ -2021,7 +2147,7 @@ function bakeFloorShade(){
 }
 function environment(level) {
   const half=level.width/2, depth=level.depth, [hx,hz]=level.home;
-  box(level.scene==='kitchen'?'846750':'93806b',0,-.08,depth/2,level.width+.3,.16,depth+.3,{material:1});
+  box(level.scene==='kitchen'?'846750':level.scene==='laundry'?'77766a':'93806b',0,-.08,depth/2,level.width+.3,.16,depth+.3,{material:1});
   box('637774',0,4.75,depth/2,level.width,.17,depth);
   for(const side of [-1,1]) {
     box('77827a',side*(half+.09),2.3,depth/2,.18,4.6,depth);
@@ -2045,7 +2171,8 @@ function environment(level) {
   place('drum','88744b',sx,4.22,sz,.93,.37,.93);
   place('tube','ffe3a2',sx,4.044,sz,.76,.05,.76,{glow:1});
   place('sphere','fff6ce',sx,4.018,sz,.26,.16,.26,{glow:1});
-  for(let i=0;i<92;i++){
+  const debrisCount=level.scene==='laundry'?30:92;
+  for(let i=0;i<debrisCount;i++){
     const x=Math.sin(i*45.17)*half*.96, z=.7+(Math.sin(i*34.29)+1)*.5*(depth-1.5);
     const size=.022+Math.abs(Math.cos(i*1.28))*.075;
     box(i%3===0?'a78d6b':'b9a37e',x,.008,z,size,.013,size*.56,{yaw:i*2.14});
@@ -2135,10 +2262,7 @@ function setupCat() {
     for(const z of [-.37,.05,.37]) catPart('sphere',stripe,side*.325,.918,z,.19,.44,.12,{roll:side*.25});
   }
   catPart('sphere','bd8179',0,1.104,1.164,.139,.085,.062);
-  for(let i=0;i<9;i++) {
-    const f=i/8;
-    catPart('sphere',i===8?white:i%3===1?stripe:fur,0,.65+f*f*.93,-.82-f*.93,.23-f*.08,.23-f*.08,.26,{tail:f});
-  }
+
 }
 function setView(x,y,z,yaw,pitch) {
   const sin=Math.sin(yaw), cos=Math.cos(yaw), sp=Math.sin(pitch), cp=Math.cos(pitch);
@@ -2178,12 +2302,14 @@ function drawCat(actor, animationTime) {
   const prowl=actor.lunge?.stage==='brace'?.32:actor.lunge?.stage==='slide'?.24:actor.search?.stage==='guard'?.29:actor.phase==='hunt'?.12:0;
   for(const part of catShapes) {
     const stride=part.gaitSign ? Math.sin(actor.gait)*part.gaitSign*Math.min(actor.speed*.13,.25) : 0;
-    const tail=part.tail ? Math.sin(animationTime*2.6-part.tail*2)*part.tail*.36 : 0;
-    const x=part.x+tail, z=part.z+stride;
+    const x=part.x, z=part.z+stride;
     const y=part.y+bob-prowl*(part.y>.60?1:0);
     const matrix=model(actor.x+x*cosine+z*sine,y,actor.z-x*sine+z*cosine,part.scale,actor.yaw,part.gaitSign ? stride*.85 : 0,part.roll||0);
     draw({...part,matrix});
   }
+  const tailYaw=actor.yaw+Math.sin(animationTime*2.8)*.22;
+  draw(element('catTail','ce8a4f',actor.x-sine*.67,.79+bob-prowl,actor.z-cosine*.67,
+    1,1,1,{yaw:tailYaw,material:6}));
 }
 function drawFoodModel(food,scale=1) {
   const {x,y,z,name,color}=food;
@@ -2321,6 +2447,7 @@ function render(dt, filmTime) {
     gl.uniform3fv(shader.Eye,view.position);
     gl.uniform3fv(shader.Lamp,level.light);
     gl.uniform2f(shader.CabinetLight,cabinetFade,crack);
+    gl.uniform1f(shader.Laundry,level.scene==='laundry'?1:0);
     gl.uniform3fv(shader.Fog,fog);
     gl.uniform2f(shader.Room,level.width/2,level.depth);
     gl.uniform3f(shader.Cat,actor.x,actor.z,1);
