@@ -189,7 +189,13 @@ html[lang=en] #coopLobby{align-items:safe center}
 .immersive .maze-tile:disabled{pointer-events:none}
 .immersive .maze-tile{background:#342d23}.immersive .maze-tile.wall{background:linear-gradient(140deg,#947545,#6d5535)}
 .immersive .maze-tile.mouse:after{width:55%;height:32%;border:solid #f4ddad;border-width:0 0 4px 4px;transform:rotate(-32deg);background:transparent;border-radius:0 0 0 8px}
-#denName{width:min(12em,48vw);padding:8px;color:#fff2d9;border:1px solid #b59669;background:#34291f;border-radius:5px}.mode-actions{flex-wrap:wrap}</style>
+#denName{width:min(12em,48vw);padding:8px;color:#fff2d9;border:1px solid #b59669;background:#34291f;border-radius:5px}.mode-actions{flex-wrap:wrap}#cageWarn{background:#542f27;border-color:#c58b64;color:#fff0d8;white-space:nowrap}
+#cageWarn:disabled{opacity:.58}
+#cageWarningStatus{width:100%;text-align:right;color:#f4cdad;font-size:12px}
+#cageWarningStatus:empty{display:none}
+#outsideWarning{position:absolute;left:50%;bottom:clamp(84px,17vh,155px);transform:translateX(-50%);width:max-content;max-width:86vw;padding:9px 14px;border:1px solid #d08f67;border-radius:7px;background:#43251fee;color:#fff0dc;text-align:center;box-shadow:0 3px 15px #0007}
+@media(pointer:coarse){#cageWarn kbd{display:none}}
+</style>
 </head>
 <body>
 <canvas id="world" aria-label="第一人称 3D 游戏画面"></canvas><canvas id="software" aria-hidden="true" hidden></canvas><canvas id="effects" aria-hidden="true"></canvas><div id="shade"></div>
@@ -212,6 +218,7 @@ html[lang=en] #coopLobby{align-items:safe center}
   <div id="alert"><span id="alertText">猫没发现你</span><span class="bar"><i id="alertFill"></i></span></div>
   <span id="crosshair"></span><p id="prompt" hidden></p><button id="lockPrompt" type="button" hidden><kbd>E</kbd> 打开密码锁</button><button id="climbPrompt" type="button" hidden><kbd>F</kbd><span id="climbAction">抓住爬架</span></button><button id="pushCanPrompt" type="button" hidden><kbd>E</kbd><span id="noiseAction">推下空罐头</span></button><p id="toast" role="status" hidden></p>
   <div id="markers"></div>
+  <div id="outsideWarning" role="alert" hidden>队友提醒：猫来了！</div>
   <div id="coopSignals" hidden>
     <strong id="cageLampText"></strong>
     <span id="cageSignOrder"></span>
@@ -297,7 +304,7 @@ html[lang=en] #coopLobby{align-items:safe center}
   <div class="cage-shell"><button id="keyhole" type="button"><i aria-hidden="true"></i><span id="keyholeLabel">查看门锁</span></button><span id="wireCaption" role="status"></span>
     <header class="cage-top">
       <div><div class="stamp" id="cageChapter">联机合作 · 笼内</div><h2 id="cageTitle">隔笼暗号</h2></div>
-      <div class="cage-actions"><button id="cageAudio" type="button" class="utility" aria-pressed="true">音效 开</button><button id="leaveCage" class="utility">离开联机</button></div>
+      <div class="cage-actions"><button id="cageWarn" type="button" class="utility" disabled><kbd>V</kbd> 吱吱！猫来了</button><button id="cageAudio" type="button" class="utility" aria-pressed="true">音效 开</button><button id="leaveCage" class="utility">离开联机</button><span id="cageWarningStatus" role="status"></span></div>
     </header>
     <div class="cage-layout">
       <div class="cage-left">
@@ -365,6 +372,14 @@ html[lang=en] #coopLobby{align-items:safe center}
 const $ = id => document.getElementById(id);
 const englishUi={
   "抓住爬架": "Grab Ladder",
+  "抓着绳子":"On the rope",
+  "抓住绳子":"Grab rope",
+  "按住后退键沿绳子滑下":"Hold back to slide down the rope",
+  "按住 S 或 ↓ 沿绳子滑下":"Hold S or \u2193 to slide down the rope",
+  "吱吱！猫来了":"Squeak! Cat incoming",
+  "队友提醒：猫来了！":"Your partner warns: Cat incoming!",
+  "连接断开，没能发出警报。":"Disconnected. Warning could not be sent.",
+  "已提醒队友。":"Warning sent.",
   "抓住下行爬架": "Grab Ladder Down",
   "按住 W 或 ↑ 往上爬，S 或 ↓ 往下爬": "Hold W or ↑ to climb up, S or ↓ to climb down",
   "按住前进键往上爬，后退键往下爬": "Hold Forward to climb up, Back to climb down",
@@ -1453,9 +1468,24 @@ function climbRail(x,z,bottomY,topY,forward=1,downOnly=false) {
   const front=z-forward*.18;
   const lower={x,y:bottomY,z:z-forward*.43};
   const upper={x,y:topY,z:z+forward*.56};
-  world.climbs.push({lower,upper,downOnly});
   const height=topY-bottomY;
-  const color=downOnly?'c29469':'d5a65a';
+  const rail={lower,upper,downOnly};
+  world.climbs.push(rail);
+  if(downOnly){
+    const ropeZ=lower.z-forward*.16;
+    rail.rope={x,z:ropeZ,face:forward<0?0:Math.PI};
+    place('tube','b98852',x,bottomY+height*.5,ropeZ,.059,height,.059,{material:2,glow:.13});
+    for(let y=bottomY+.09,i=0;y<topY;y+=.17,i++){
+      place('drum',i%2?'ddba83':'cba46f',x,y,ropeZ,.063,.035,.063,
+        {roll:i%2?.35:-.35,material:2,glow:.18});
+    }
+    const span=Math.abs(upper.z-ropeZ);
+    box('8c6c4d',x,topY+.038,(upper.z+ropeZ)*.5,.16,.075,span+.17,{material:2});
+    place('drum','c39860',x,topY-.034,ropeZ,.17,.15,.16,{glow:.22});
+    place('drum','e0bf8e',x,bottomY+.095,ropeZ,.126,.07,.12,{glow:.12});
+    return;
+  }
+  const color='d5a65a';
   for(const side of [-1,1]) {
     box(color,x+side*.28,bottomY+height*.5,front,.066,height,.071,{material:2,glow:.15});
     box('f7cf85',x+side*.28,topY+.052,front,.098,.104,.12,{glow:.34});
@@ -2251,6 +2281,7 @@ function createLevel(index) {
   $('lockPrompt').hidden=true;
   $('climbPrompt').hidden=true;
   $('pushCanPrompt').hidden=true;
+  $('outsideWarning').hidden=true;
   $('coopSignals').hidden=true;
   $('toast').hidden=true;
 }
@@ -2473,7 +2504,10 @@ function render(dt, filmTime) {
     setView(x,.40,1.56,.085+Math.sin(filmTime*.25)*.035,.12);
   } else {
     const bob=Math.sin(player.gait*2)*Math.min(.025,player.amount*.005);
-    setView(player.x,player.y+player.eye+bob,player.z,player.yaw,player.pitch);
+    const rope=player.climb?.rail.rope;
+    const lean=rope?clamp((player.climb.rail.upper.y-player.y)*1.8,0,1):0;
+    setView(player.x+.042*lean,player.y+player.eye+bob,
+      player.z-(rope?Math.cos(rope.face)*.15*lean:0),player.yaw,player.pitch-.20*lean);
   }
   const inside=arriving&&view.position[2]>world.level.depth+1.21;
   const level=inside?{...world.level,light:home.light,depth:home.depth}:world.level;
@@ -2502,6 +2536,17 @@ function render(dt, filmTime) {
   if(home&&(denGlow||arriving)){
     for(const shape of home.shapes) draw(shape);
     for(const food of home.food) drawDenFood(food);
+  }
+  if(!inCage&&player.climb?.rail.rope&&player.climb.travel<=player.climb.rise){
+    const {rope}=player.climb.rail;
+    for(const side of [-1,1]){
+      const y=player.y+player.eye-.15+Math.sin(player.gait+side*.8)*.021;
+      const z=rope.z-Math.cos(rope.face)*.034;
+      draw(element('sphere','a99175',rope.x+side*.041,y,z,.052,.059,.066,{roll:side*.34}));
+      for(let digit=0;digit<3;digit++)draw(element('sphere','e1a697',
+        rope.x+side*(.016+digit*.009),y+.015-digit*.006,z-.018*Math.cos(rope.face),
+        .018,.020,.029,{roll:side*.15}));
+    }
   }
   drawStoveCourse(filmTime);
   drawWater(filmTime);
@@ -2576,7 +2621,7 @@ function drawEffects(dt,filmTime) {
   }
   const gesture=coopHost()&&time<cageRound.pawUntil;
   const gripping=Boolean(player.climb);
-  if(mode==='play' && (gesture || player.amount>3.5 || player.low || !player.ground)) {
+  if(mode==='play' && (gesture || (!player.climb?.rail.rope&&(player.amount>3.5||player.low||!player.ground)))) {
     const size=Math.min(66,w*.075);
     for(const side of [-1,1]) {
       const step=Math.sin(player.gait+side*Math.PI/2);
@@ -2741,11 +2786,12 @@ function startClimbing() {
   player.climb={rail,travel:up?0:total,rise,total};
   player.stance=false;player.low=false;player.ground=false;player.vY=0;player.amount=0;
   $('climbPrompt').hidden=true;
-  playTone(95,.065,.038,'triangle',57);
+  playTone(rail.rope?147:95,rail.rope?.12:.065,.038,'triangle',rail.rope?79:57);
 }
 function moveOnClimb(dt,direction) {
   if(!direction) return;
   const climb=player.climb;
+  if(climb.rail.rope&&direction>0)return;
   const {lower,upper}=climb.rail;
   climb.travel=clamp(climb.travel+dt*2.27*direction,0,climb.total);
   const across=Math.max(0,climb.travel-climb.rise)/(climb.total-climb.rise);
@@ -2807,7 +2853,7 @@ function updatePlayer(dt) {
   const held=(...codes)=>codes.some(code=>pressed.has(code));
   player.yaw+=(Number(held('ArrowRight'))-Number(held('ArrowLeft')))*dt*1.64;
   if(player.climb){
-    const face=player.climb.rail.face;
+    const face=player.climb.rail.rope?.face??player.climb.rail.face;
     if(face!==undefined){
       const settle=1-Math.exp(-dt*11);
       player.yaw+=angleDiff(player.yaw,face)*settle;
@@ -3337,17 +3383,20 @@ function updateGoals() {
     return;
   }
   const cageHint=coopHost()?cageHostHint():null;
+  $('outsideWarning').hidden=!(cageRound&&time<cageRound.warningUntil);
   $('lockPrompt').hidden=Boolean(cageRound)||missing>0||!nearLockedDen();
   let hint='';
   const climb=nearbyClimb(), bell=nearBell(), pan=panNear(), door=nearCabinetDoor(), can=door||pan||bell||nearbyCan();
   if(can)setText('noiseAction',door?'撞开柜门':pan?'转动锅柄':bell?'拉动棉线':'推下空罐头');
   $('climbPrompt').hidden=!climb;
   $('pushCanPrompt').hidden=!can;
-  if(climb) setText('climbAction',climb.up?'抓住爬架':'抓住下行爬架');
+  if(climb) setText('climbAction',climb.rail.rope?'抓住绳子':climb.up?'抓住爬架':'抓住下行爬架');
   const water=world.water;
   const atSink=water&&player.y>water.y&&Math.abs(player.x-water.x)<1.65&&
     player.z>=water.z-water.d*.5-.75&&player.z<=water.z+water.d*.5-.15;
-  if(player.climb) hint=matchMedia('(pointer:coarse)').matches?
+  if(player.climb?.rail.rope)hint=matchMedia('(pointer:coarse)').matches?
+    '按住后退键沿绳子滑下':'按住 S 或 ↓ 沿绳子滑下';
+  else if(player.climb) hint=matchMedia('(pointer:coarse)').matches?
     '按住前进键往上爬，后退键往下爬':'按住 W 或 ↑ 往上爬，S 或 ↓ 往下爬';
   else if(climb||can) hint='';
   else if(world.course&&distance(player,cabinetHatch)<2.6&&player.y<.1)
@@ -3376,7 +3425,7 @@ function updateGoals() {
   $('staminaFill').style.transform='scaleX('+player.stamina.toFixed(2)+')';
   const touch=matchMedia('(pointer:coarse)').matches;
   setText('sniffLabel',time<sniffUntil?'正在嗅闻':time>=readyAt?(touch?'嗅闻就绪':'Q · 嗅闻'):'气味恢复中');
-  setText('stance',player.climb?'在爬架上':player.low?'贴地潜行':player.amount>3.65?'冲刺 · 猫能听见':touch?'慢走':'慢走 · C 潜行');
+  setText('stance',player.climb?(player.climb.rail.rope?'抓着绳子':'在爬架上'):player.low?'贴地潜行':player.amount>3.65?'冲刺 · 猫能听见':touch?'慢走':'慢走 · C 潜行');
 }
 function audioStart() {
   if(!audioEnabled) return;
@@ -3692,7 +3741,7 @@ const cageSignCount=index=>index===0?1:Math.min(index+2,3);
 let cageRoom=null, cageRound=null, cageGuest=null, cageRun=0, signalRevision=0;
 const cageLatches=[];
 const coopHost=()=>cageRoom?.active && (cageRoom.outside??(cageRoom.role==='host'));
-const cageInbox={serial:0,playing:null,nextReplyAt:0,lampCue:null};
+const cageInbox={serial:0,playing:null,nextReplyAt:0,nextWarningAt:0,lampCue:null};
 const cageReplies=new Map([
   ['repeat',{host:'队友请你再传一次暗号。',guest:'已请队友再传一次。'}],
   ['confirm',{host:'队友收到了你的暗号。',guest:'已告诉队友你收到了。'}]
@@ -3707,7 +3756,7 @@ function newCageRound(index) {
     position:tiles.indexOf('S'),totalPlates:[...tiles].filter(tile=>tile==='P').length,
     plates:new Set(),order:shuffle(cheeseSigns.map((_,i)=>i)).slice(0,count),
     lightOn:Math.random()<.5, escaped:false,lastMove:-Infinity,
-    signalUntil:0,pawUntil:0,pawCount:0,noise:null,contact:false,reply:null,nextReplyAt:0,nextViewAt:0
+    signalUntil:0,warningUntil:0,nextWarningAt:0,pawUntil:0,pawCount:0,noise:null,contact:false,reply:null,nextReplyAt:0,nextViewAt:0
   };
 }
 function cageFood(level) {
@@ -3925,23 +3974,30 @@ function sendCageSignal(kind,count) {
   }
 }
 let mouseSqueakBank=[];
+// Duration, opening pitch, peak pitch, fall-off and attack rasp differ for each call.
+const squeakProfiles=[
+  [.098,2380,1750,740,.07],[.113,2090,2200,680,.11],[.086,2730,1700,910,.08],
+  [.123,1980,1970,660,.10],[.075,2920,2250,890,.14],[.091,2720,2610,870,.15],
+  [.157,2290,2680,1230,.19]
+];
 function mouseSqueakSamples(sampleRate,variation) {
-  const duration=.087+variation*.007;
+  const [duration,floor,peak,fall,rasp]=squeakProfiles[variation];
   const samples=new Float32Array(Math.floor(sampleRate*duration));
-  let phase=0, previous=0, seed=873989+2531*variation;
+  let phase=0,slowNoise=0,seed=873989+2531*variation;
   for(let i=0;i<samples.length;i++){
     const t=i/samples.length;
-    const peak=Math.exp(-Math.pow((t-.31)/.25,2));
-    const flutter=Math.sin(t*TAU*4.5)*83+Math.sin(t*TAU*9)*41;
-    const frequency=1960+variation*103+peak*2280-t*520+flutter;
+    const arc=Math.exp(-((t-.33)**2)/.085);
+    const quiver=Math.sin(t*TAU*(3.5+variation*.35))*92+Math.sin(t*TAU*8.7)*31;
+    const frequency=floor+peak*arc-fall*t+quiver;
     phase+=TAU*frequency/sampleRate;
     seed=(Math.imul(seed,1664525)+1013904223)>>>0;
     const noise=seed/2147483648-1;
-    const breath=(noise-previous)*(.09+.05*Math.sin(t*Math.PI));
-    previous=noise;
-    const middle=1-.25*Math.exp(-Math.pow((t-.61)/.066,2));
-    const envelope=Math.pow(Math.sin(t*Math.PI),.75)*Math.exp(-t*.8)*middle;
-    samples[i]=.255*envelope*(Math.sin(phase)+.27*Math.sin(2*phase+.26)+.105*Math.sin(3*phase+.61)+breath);
+    slowNoise+=.34*(noise-slowNoise);
+    const attack=Math.min(t/.105,1);
+    const release=Math.min((1-t)/.23,1);
+    const envelope=attack*release*Math.exp(-1.05*t)*(1-.14*Math.sin(t*TAU*3.4)**2);
+    const breath=(noise-slowNoise)*rasp*(1.35-.55*t);
+    samples[i]=.28*envelope*(Math.sin(phase)+.32*Math.sin(2*phase+.24)+.14*Math.sin(3*phase+.72)+breath);
   }
   return samples;
 }
@@ -3965,7 +4021,7 @@ function pulseSqueaks(count,onPulse) {
   const room=cageRoom, revision=++signalRevision;
   for(let i=0;i<count;i++) window.setTimeout(()=>{
     if(cageRoom!==room||signalRevision!==revision) return;
-    playMouseSqueak(i%4);
+    playMouseSqueak((i+(revision%4))%4);
     if(onPulse) onPulse();
   },i*250);
 }
@@ -4069,6 +4125,40 @@ function replyFromCage(replyId) {
     setText('cageContact','正在送出回应…');
   } else setText('cageContact','回应没送出，请稍后再试。');
 }
+function playCatWarning(roundId){
+  const room=cageRoom;
+  for(const [delay,voice] of [[0,4],[105,5],[278,6]])window.setTimeout(()=>{
+    if(cageRoom===room&&(coopHost()?cageRound?.id:cageGuest?.round)===roundId)playMouseSqueak(voice);
+  },delay);
+}
+function sendCatWarning(){
+  const state=cageGuest;
+  const now=performance.now();
+  if(mode!=='guest'||state?.phase!=='play'||state.escaped||now<cageInbox.nextWarningAt)return;
+  audioStart();
+  if(!sendRoom({type:'catWarning',round:state.round})){
+    setText('cageWarningStatus','连接断开，没能发出警报。');
+    return;
+  }
+  cageInbox.nextWarningAt=now+1450;
+  $('cageWarn').disabled=true;
+  setText('cageWarningStatus','已提醒队友。');
+  playCatWarning(state.round);
+  const room=cageRoom;
+  window.setTimeout(()=>{
+    if(cageRoom!==room||cageGuest?.round!==state.round)return;
+    $('cageWarn').disabled=cageGuest.phase!=='play'||cageGuest.escaped;
+    setText('cageWarningStatus','');
+  },1450);
+}
+function receiveCatWarning(){
+  const now=performance.now();
+  if(mode!=='play'||cageRound.escaped||now<cageRound.nextWarningAt)return;
+  cageRound.nextWarningAt=now+1100;
+  cageRound.warningUntil=time+2.35;
+  $('outsideWarning').hidden=false;
+  playCatWarning(cageRound.id);
+}
 function receiveCoop(message) {
   if(!cageRoom?.active||!message||typeof message!=='object') return;
   if(coopHost()){
@@ -4077,6 +4167,7 @@ function receiveCoop(message) {
       if(message.type==='move') acceptCageMove(message);
       else if(message.type==='guess') acceptCageGuess(message);
       else if(message.type==='reply') acceptCageReply(message.reply);
+      else if(message.type==='catWarning') receiveCatWarning();
     }
     return;
   }
@@ -4263,7 +4354,8 @@ function updateCageView(state) {
     inspectWire(false);
     signalRevision++;
     finishSqueakReplay();
-    cageInbox.serial=0;cageInbox.nextReplyAt=0;cageInbox.lampCue=null;
+    cageInbox.serial=0;cageInbox.nextReplyAt=0;cageInbox.nextWarningAt=0;cageInbox.lampCue=null;
+    setText('cageWarningStatus','');
     $('cageForm').reset();
     cageLatches.length=0;
     $('squeakHistory').replaceChildren();
@@ -4278,6 +4370,7 @@ function updateCageView(state) {
     }
     buildMaze(state.index);
   }
+  $('cageWarn').disabled=state.phase!=='play'||state.escaped||performance.now()<cageInbox.nextWarningAt;
   if(justOpened) {
     setText('cageFeedback','开锁成功。走到绿色出口！');
     playUnlockSound();
@@ -4524,6 +4617,8 @@ function enterCageView(swapped=false) {
   $('endCoop').hidden=true;$('guestConnected').hidden=true;
   document.body.classList.remove('coop-playing');
   renderLampLesson(null);
+  $('cageWarn').disabled=true;
+  setText('cageWarningStatus','');
   mountCageWindow();
   setText('cageNotice',swapped?'换位了！这关你在笼内，正在准备迷宫。':'已连接。等待笼外队友开始。');
   $('cageNotice').hidden=false;
@@ -5031,7 +5126,7 @@ function cageInputs() {
     cageLookLeft:()=>{cageWindowYaw=clamp(cageWindowYaw+.42,-1.05,1.05);},
     cageLookForward:()=>{cageWindowYaw=0;},
     cageLookRight:()=>{cageWindowYaw=clamp(cageWindowYaw-.42,-1.05,1.05);},
-    cageAudio:()=>$('audio').click(),cageConfirm:()=>replyFromCage('confirm'),cageRepeat:()=>replyFromCage('repeat'),
+    cageAudio:()=>$('audio').click(),cageWarn:sendCatWarning,cageConfirm:()=>replyFromCage('confirm'),cageRepeat:()=>replyFromCage('repeat'),
     resetLobby:()=>{cancelRoom();setLobbyChoice();$('hostRoom').focus({preventScroll:true});}};
   for(const [id,listener] of Object.entries(events)) $(id).addEventListener('click',listener);
   $('shortGuestForm').addEventListener('submit',submitShortRoom);
@@ -5082,7 +5177,9 @@ function cageInputs() {
   });
   const moves={ArrowUp:[0,-1],ArrowDown:[0,1],ArrowLeft:[-1,0],ArrowRight:[1,0],KeyW:[0,-1],KeyS:[0,1],KeyA:[-1,0],KeyD:[1,0]};
   document.addEventListener('keydown',event=>{
-    if(mode==='guest'&&moves[event.code]&&!event.target.matches?.('input,textarea,select,[contenteditable]')){
+    if(mode==='guest'&&event.code==='KeyV'&&!event.repeat&&!event.target.matches?.('input,textarea,select,[contenteditable]')){
+      event.preventDefault();sendCatWarning();
+    } else if(mode==='guest'&&moves[event.code]&&!event.target.matches?.('input,textarea,select,[contenteditable]')){
       event.preventDefault();moveFromCage(...moves[event.code]);
     } else if(event.code==='Escape'&&!$('coopLobby').hidden) {
       event.preventDefault();closeCageLobby();
