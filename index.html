@@ -406,9 +406,19 @@ const englishUi={
   "第 3 关 · 水槽": "Level 3 · Sink",
   "第 4 关 · 洗衣房": "Level 4 · Laundry",
   "越过水槽": "Across the Sink",
-  "左架有食物。右侧从木箱起跳，沿金梯上吊灯。":"Search the left rack. On the right, jump from the crate and climb to the pendant light.",
+  "左架有食物。右侧钻桌角，穿过灶台去吊灯。":"Search the left rack. Enter the cabinet at the right table corner and cross the stove to the pendant.",
   "检查左侧高架和右侧吊灯，找齐奶酪图案。":"Collect the marked cheese on the left rack and the right pendant light.",
   "摔晕了，缓一下。":"Dazed from the fall. Catch your breath.",
+  "蹲下钻过金属隧道，出口有梯子。":"Crouch through the metal tunnel. A ladder waits at the exit.",
+  "锅柄对齐了，沿把手跳上木阶。":"Handle aligned. Run along it and jump to the steps.",
+  "转动倒扣的锅，让把柄朝向左边木阶。":"Turn the upside-down pan until its handle points toward the wooden steps on the left.",
+  "转动锅柄":"Turn the pan handle",
+  "摸黑向右走，撞开柜门。":"Feel your way right and bump the cupboard door.",
+  "门开了一条缝。快找断梯！":"Light through the crack! Find the broken stairs.",
+  "沿柜内小梯向上爬。":"Climb the little stairs inside the cupboard.",
+  "蜘蛛扑来了！从桌角再试。":"The spider caught you! Try again from the table corner.",
+  "火苗太烫了，绕开亮着的炉圈。":"Too hot! Go around the lit burners.",
+  "夹子弹起来了，绕过金属踏片。":"Snap! Steer around the metal trigger.",
   "洗衣房的高架": "The Laundry Rack",
   "沿金色爬架上桌，跳过水槽的干踏点。墙洞在地面。": "Climb the gold rungs, then jump across the dry pads. The exit is at floor level.",
   "沿金色爬架上桌，跳过水槽的干踏点，找齐奶酪图案。": "Climb the gold rungs and jump across the dry pads to find all the cheese symbols.",
@@ -881,11 +891,11 @@ const levels = [
     scene:'sink', pounceReach:1.08
   },
   {
-    title:'洗衣房的高架', intro:'左架有食物。右侧从木箱起跳，沿金梯上吊灯。',
+    title:'洗衣房的高架', intro:'左架有食物。右侧钻桌角，穿过灶台去吊灯。',
     coopIntro:'检查左侧高架和右侧吊灯，找齐奶酪图案。',
     width:14, depth:18.8, spawn:[-2.92,1.44,0], home:[2.62,18.37],
     light:[-1.95,4.5,10.9], fog:'343d55',
-    food:[[4.85,13.12,'饼干屑','dfa96e',3.10],[-3.38,10.46,'松子','eac47a',2.24],[-2.66,14.37,'奶酪','ffbe60',2.24]],
+    food:[[5.46,16.68,'饼干屑','dfa96e',3.70],[-3.38,10.46,'松子','eac47a',2.24],[-2.66,14.37,'奶酪','ffbe60',2.24]],
     patrol:[[1.7,3.66],[4.65,6.5],[4.75,11.1],[4.4,15.45],[2,16.8],[0,17.05],
       [-2.2,17.08],[-5.13,16.65],[-4.99,14.76],[-5.37,12.64],[-5.45,8.7],
       [-5.21,5.15],[-5.12,2.09],[-3.14,2.12],[-.95,2.28]],
@@ -1501,35 +1511,139 @@ function laundryRoom() {
   crate(-6.24,14.75,1.24,1.35,.72,'6c6472');
   box('6c8387',2.75,.025,7.4,3.1,.051,3.0,{material:3});
   for(const z of [5.95,8.85]) box('b68c69',2.75,.035,z,3.07,.025,.08,{material:3});
-  // The shelf gaps are short enough for a walking jump. Brackets hang off the right wall.
-  const lane=4.85, first=1.24, middle=2.08, lamp=3.10;
-  crate(lane,4.55,1.85,2.0,first,'a47650');
-  climbRail(lane,3.55,0,first);
-  function linenShelf(z,top,length,tint){
-    solid('986f50',lane,top-.095,z,1.65,.19,length,{material:2});
-    box(tint,lane,top+.004,z,1.47,.008,length-.12,{material:3});
-    for(const end of [-1,1]){
-      const bracketZ=z+end*(length*.5-.22);
-      box('58676c',5.94,top-.21,bracketZ,1.91,.095,.11);
-      box('c7aa76',lane,top+.012,z+end*(length*.5-.09),1.54,.016,.10);
+  buildStoveCourse();
+  makeWindow(-1.48,18.64,2.73,1.72,2.95);
+}
+const panCenter={x:4.75,z:13.90};
+const stoveDangers=[
+  {x:4.16,z:8.55,fire:false},{x:5.47,z:9.32,fire:true},{x:4.20,z:10.22,fire:true},
+  {x:5.42,z:10.92,fire:false}
+];
+function buildStoveCourse(){
+  world.course={door:false,entered:false,wake:null,noise:0,spider:{x:5.45,z:3.03,y:.72},
+    angle:0,turns:0,stove:false};
+  const wood={material:2},lane=4.85;
+  // A low opening on the near-left face leads into the two-storey cabinet.
+  solid('82664f',lane,.91,2.24,2.42,1.82,.16,wood);
+  solid('906a50',3.64,.91,5.85,.16,1.82,3.87,wood);
+  solid('926a4e',3.64,1.06,3.08,.16,1.51,1.69,{...wood,cover:true});
+  solid('71533e',6.06,.91,2.94,.16,1.82,1.53,wood);
+  solid('71533e',6.06,.91,5.84,.16,1.82,3.98,wood);
+  solid('b58b60',lane,1.78,4.76,2.56,.14,5.18,{...wood,cover:true});
+  solid('806147',lane,.83,7.80,2.42,1.66,.13,wood);
+  box('d3ad7c',3.53,.30,3.08,.045,.035,1.62);
+  // Each shelf has actual clearance for the standing mouse above it.
+  solid('a28262',lane,.715,4.45,1.44,.13,1.5,{...wood,cover:true});
+  climbRail(lane,3.70,0,.78);
+  solid('ae8968',lane,.79,6.53,1.62,.14,1.52,{...wood,cover:true});
+  box('cfb38c',lane,.865,5.85,1.5,.015,.10);
+  climbRail(lane,7.30,.86,1.76);
+  solid('758281',lane,1.67,9.71,2.65,.18,4.82);
+  // The dark metal tunnel opens onto the pot counter.
+  for(const x of [3.88,5.82])solid('636e70',x,1.99,11.68,.12,.46,1.0);
+  solid('88928a',lane,2.07,11.64,2.05,.10,.96,{cover:true});
+  solid('758281',lane,1.69,12.19,2.04,.14,.74);
+  climbRail(lane,12.55,1.76,2.36);
+  solid('af936e',lane,2.28,13.67,2.17,.16,2.24,wood);
+  obstacle(panCenter.x,2.48,panCenter.z,.95,.24,.95);
+  // The handle is the only bridge high enough to reach the first step.
+  world.course.bridge=obstacle(4.75,2.56,14.63,.38,.08,1.80);
+  for(const [x,z,y] of [[2.42,13.65,2.89],[2.42,15.04,3.10],[3.80,15.29,3.32],[4.04,16.66,3.52]]){
+    solid('bb976b',x,y-.07,z,.92,.14,.87,wood);
+    box('eac891',x,y+.005,z-.36,.8,.01,.075);
+    box('716557',x,y-.23,z,.12,.34,.14);
+  }
+  const lx=5.46,lz=16.68,ly=3.70;
+  solid('677e76',lx,ly-.08,lz,1.30,.16,1.26);
+  place('sphere','ffdc97',lx,ly-.29,lz,.80,.48,.80,{glow:.94});
+  for(const dx of [-.49,.49])box('625749',lx+dx,4.17,lz,.035,.94,.035);
+  climbRail(lx,17.31,0,ly,-1,true);
+}
+function insideCabinet(){
+  return world.course&&player.x>3.70&&player.x<6.03&&player.z>2.27&&player.z<7.78&&player.y<1.65;
+}
+function panNear(){
+  return world.course&&world.course.turns<3&&player.y>=2.34&&player.y<2.75&&distance(player,panCenter)<1.24;
+}
+function turnPan(){
+  if(!panNear()||time<player.stunUntil||world.course.angle!==world.course.turns*Math.PI/2)return false;
+  world.course.turns++;
+  playTone(155,.15,.07,'triangle',83);
+  return true;
+}
+function resetCourse(message,onStove){
+  const c=world.course;
+  Object.assign(player,onStove?{x:4.85,y:1.76,z:7.91}:{x:3.13,y:0,z:3.10},
+    {yaw:onStove?0:Math.PI/2,pitch:0,ground:true,vY:0,climb:null,stunUntil:time+.35});
+  c.wake=null;c.noise=0;c.entered=false;Object.assign(c.spider,{x:5.45,z:3.03,y:.72});
+  tell(message,2.2);
+}
+function updateStoveCourse(dt,sprint){
+  const c=world.course;if(!c)return;
+  const target=c.turns*Math.PI/2;
+  c.angle=Math.min(target,c.angle+dt*4.8);
+  // Rotating handle cannot support the mouse until it settles at a detent.
+  const bx=panCenter.x+Math.sin(c.angle)*1.05,bz=panCenter.z+Math.cos(c.angle)*1.05;
+  const w=c.angle===target?Math.abs(Math.sin(target))*1.76+.32:.24;
+  const d=c.angle===target?Math.abs(Math.cos(target))*1.76+.32:.24;
+  Object.assign(c.bridge,{x:bx,z:bz,x0:bx-w/2,x1:bx+w/2,z0:bz-d/2,z1:bz+d/2});
+  if(insideCabinet()){
+    if(!c.entered){c.entered=true;tell(c.door?'沿柜内小梯向上爬。':'摸黑向右走，撞开柜门。',3);}
+    c.noise+=dt*(sprint?4:player.amount>2.35?1:-.55);
+    c.noise=Math.max(c.noise,0);
+    if(!c.door&&player.x>5.70&&player.amount>.12){
+      c.door=true;playTone(87,.27,.11,'triangle',51);tell('门开了一条缝。快找断梯！',2.1);
+    }
+    if(c.wake===null&&(c.door||c.noise>1.65))c.wake=time;
+    if(c.wake!==null&&time-c.wake>1.45){
+      const sp=c.spider,dx=player.x-sp.x,dz=player.z-sp.z,len=Math.hypot(dx,dz);
+      const stride=Math.min(len,dt*.68);
+      sp.x+=dx*stride/(len||1);sp.z+=dz*stride/(len||1);
+      sp.y+=clamp(player.y+.10-sp.y,-dt*.42,dt*.42);
+      if(len<.25&&Math.abs(sp.y-player.y-.1)<.19)resetCourse('蜘蛛扑来了！从桌角再试。',false);
+    }
+  } else {c.entered=false;c.noise=0;}
+  if(player.y>=1.72&&player.y<2.10&&player.z>7.78&&player.z<11.42&&player.x>3.5){
+    c.stove=true;
+    for(const h of stoveDangers)if(distance(player,h)<(h.fire?.39:.30)){
+      resetCourse(h.fire?'火苗太烫了，绕开亮着的炉圈。':'夹子弹起来了，绕过金属踏片。',true);break;
     }
   }
-  linenShelf(7.11,first,1.70,'84978b');
-  linenShelf(8.99,middle,2.06,'84978b');
-  climbRail(lane,7.96,first,middle);
-  linenShelf(11.22,middle,1.28,'bd9870');
-  // A square enamel pendant with a walkable rim and bulb below the landing.
-  solid('647c72',lane,lamp-.085,12.98,1.78,.17,2.24);
-  box('c0ac82',lane,lamp+.012,12.98,1.61,.024,2.07,{material:2});
-  for(const side of [-1,1]){
-    box('b49a6d',lane+side*.83,lamp-.15,12.98,.07,.17,2.20);
-    box('514e47',lane+side*.68,3.83,13.25,.035,1.46,.035);
+}
+function drawStoveCourse(t){
+  const c=world.course;if(!c)return;
+  const piece=(type,col,x,y,z,w,h,d,opts)=>draw(element(type,col,x,y,z,w,h,d,opts));
+  piece('box','785740',5.97+(c.door?.085:0),.88,3.30,.08,1.68,1.45,{yaw:c.door?.20:0,material:2});
+  if(c.door){
+    piece('box','ffe2a0',5.84,.82,3.78,.032,1.49,.085,{glow:1});
+    for(let i=0;i<7;i++)piece('box','d6a366',5.79-i*.21,.009,3.78+i*.07,.225,.016,.10+i*.035,{glow:.48-i*.045});
   }
-  box('9b8362',lane,4.52,13.25,1.53,.12,.26);
-  place('sphere','ffdb94',lane,lamp-.29,12.98,.79,.46,.79,{glow:.93});
-  climbRail(lane,11.86,middle,lamp);
-  climbRail(lane,14.10,0,lamp,-1,true);
-  makeWindow(-1.48,18.64,2.73,1.72,2.95);
+  const sp=c.spider;
+  if(c.wake!==null){
+    const age=mode==='guest'?3:time-c.wake;
+    if(age>.85){
+      piece('sphere','422b30',sp.x,sp.y,sp.z,.26,.17,.34);
+      for(const side of [-1,1])for(let j=0;j<4;j++)
+        piece('box','704744',sp.x+side*.15,sp.y-.034,sp.z+(j-1.5)*.073,.22,.028,.032,{roll:side*(.35+.19*Math.sin(t*9+j)),yaw:side*(j-1.5)*.32});
+    }
+    for(const side of [-1,1])piece('sphere','ff3028',sp.x+side*.049,sp.y+.026,sp.z-.142,.04,.044,.04,{glow:1});
+  }
+  for(const h of stoveDangers){
+    if(h.fire){
+      piece('tube','343d40',h.x,1.795,h.z,.83,.07,.83);
+      for(let j=0;j<8;j++){
+        const a=j*Math.PI/4;
+        piece('cone',j%2?'f7ad51':'63b8df',h.x+.29*Math.cos(a),1.92,h.z+.29*Math.sin(a),.12,.22+.065*Math.sin(t*7+j),.12,{glow:.9});
+      }
+    }else{
+      piece('box','bf9162',h.x,1.78,h.z,.53,.04,.57);
+      piece('box','bebcb0',h.x,1.815,h.z,.21,.022,.20);
+      for(const side of [-1,1])piece('box','979c99',h.x+side*.21,1.88,h.z,.033,.18,.42);
+      piece('box','adb1aa',h.x,1.965,h.z-.19,.44,.035,.035);
+    }
+  }
+  piece('drum','566169',panCenter.x,2.48,panCenter.z,1.13,.24,1.13);
+  piece('box','ae8962',panCenter.x+Math.sin(c.angle)*1.05,2.56,panCenter.z+Math.cos(c.angle)*1.05,.32,.08,2.08,{yaw:c.angle});
 }
 const levelScenes={kitchen,pantry,sink:sinkRoom,laundry:laundryRoom};
 let software=null;
@@ -2032,6 +2146,7 @@ function render(dt, filmTime) {
     for(const shape of home.shapes) draw(shape);
     for(const food of home.food) drawDenFood(food);
   }
+  drawStoveCourse(filmTime);
   drawWater(filmTime);
   drawCan(inCage);
   const bell=world.bell;
@@ -2060,6 +2175,15 @@ function drawEffects(dt,filmTime) {
   const w=viewportWidth, h=viewportHeight;
   paint.clearRect(0,0,w,h);
   if(mode==='menu') return;
+  if(insideCabinet()){
+    const c=world.course,age=c.wake===null?-1:time-c.wake;
+    paint.fillStyle=c.door?'rgba(19,10,8,.43)':age>.85?'rgba(0,0,0,.88)':'#020101';
+    paint.fillRect(0,0,w,h);
+    if(age>=0&&age<1.45){
+      paint.fillStyle='#ff453b';
+      for(const side of [-1,1]){paint.beginPath();paint.arc(w*(.52+side*.011),h*.49,Math.max(2,w*.003),0,TAU);paint.fill();}
+    }
+  }
   if(time<player.stunUntil){
     const fade=clamp((player.stunUntil-time)/.95,0,1);
     paint.fillStyle='rgba(54,44,63,'+(.30*fade)+')';paint.fillRect(0,0,w,h);
@@ -2108,7 +2232,7 @@ function updateMarkers() {
   for(const item of [...world.food,world.home]){
     const home=item===world.home;
     const near=distance(item,player);
-    const show=!item.found && (sniff || (home && near<2.6));
+    const show=!(insideCabinet()&&!world.course.door)&&!item.found && (sniff || (home && near<2.6));
     item.marker.hidden=!show;
     if(!show) continue;
     const dx=item.x-view.position[0], dy=(item.y??0)+.5-view.position[1], dz=item.z-view.position[2];
@@ -2201,6 +2325,7 @@ function nearBell(){
   return world.bell&&world.bell.pulled===null&&player.low&&player.y<.1&&distance(player,world.bell)<1.05;
 }
 function pushCan() {
+  if(mode==='play'&&turnPan())return true;
   if(mode==='play'&&nearBell()){
     world.bell.pulled=time;
     tell('棉线绷紧了，快从另一头溜走。',2.4);
@@ -2238,6 +2363,7 @@ function updateCan() {
 function startClimbing() {
   if(time<player.stunUntil)return;
   if(mode!=='play') return;
+  if(insideCabinet()&&!world.course.door){tell('摸黑向右走，撞开柜门。',2);return;}
   const available=nearbyClimb();
   if(!available) return;
   const {rail,up}=available;
@@ -2798,8 +2924,8 @@ function updateGoals() {
   const cageHint=coopHost()?cageHostHint():null;
   $('lockPrompt').hidden=Boolean(cageRound)||missing>0||!nearLockedDen();
   let hint='';
-  const climb=nearbyClimb(), bell=nearBell(), can=bell||nearbyCan();
-  if(can)setText('noiseAction',bell?'拉动棉线':'推下空罐头');
+  const climb=nearbyClimb(), bell=nearBell(), pan=panNear(), can=pan||bell||nearbyCan();
+  if(can)setText('noiseAction',pan?'转动锅柄':bell?'拉动棉线':'推下空罐头');
   $('climbPrompt').hidden=!climb;
   $('pushCanPrompt').hidden=!can;
   if(climb) setText('climbAction',climb.up?'抓住爬架':'抓住下行爬架');
@@ -2809,6 +2935,10 @@ function updateGoals() {
   if(player.climb) hint=matchMedia('(pointer:coarse)').matches?
     '按住前进键往上爬，后退键往下爬':'按住 W 或 ↑ 往上爬，S 或 ↓ 往下爬';
   else if(climb||can) hint='';
+  else if(world.course&&player.z>10.75&&player.z<12.2&&player.y>1.70&&player.y<1.85&&player.x>3.55)
+    hint='蹲下钻过金属隧道，出口有梯子。';
+  else if(world.course&&player.z>12.55&&player.y>=2.34&&player.y<2.76&&player.x>3.5)
+    hint=world.course.turns===3?'锅柄对齐了，沿把手跳上木阶。':'转动倒扣的锅，让把柄朝向左边木阶。';
   else if(atSink) hint=matchMedia('(pointer:coarse)').matches?'点「跳跃」跳到下一块干踏点':'按空格跳到下一块干踏点';
   else if(cageHint!==null) hint=cageHint;
   else if(gap<2) {
@@ -3110,6 +3240,7 @@ function run() {
     if(mode==='play'){
       time+=dt;alertPulse=Math.max(0,alertPulse-dt*.66);
       const sprint=updatePlayer(dt);
+      updateStoveCourse(dt,sprint);
       updateCan();
       updateCat(dt,sprint);
       if(mode==='play') updateGoals();
@@ -3194,14 +3325,18 @@ function sendCageWorld(now) {
     cat.x,cat.z,cat.yaw%TAU,cat.gait%TAU,cat.speed,cat.lunge?({brace:2,dash:3,slide:4,recover:5})[cat.lunge.stage]:cat.phase==='hunt'?1:0];
   const pushedAt=world.can?.pushedAt;
   const can=pushedAt==null?undefined:Math.min(CAN_SETTLED,Math.round((time-pushedAt)*100)/100);
-  sendRoom({type:'view',round:cageRound.id,pose:pose.map(value=>Math.round(value*100)/100),can});
+  sendRoom({type:'view',round:cageRound.id,pose:pose.map(value=>Math.round(value*100)/100),can,course:world.course?[world.course.door,world.course.angle,world.course.wake!==null,world.course.spider.x,world.course.spider.y,world.course.spider.z]:undefined});
 }
-function acceptCageWorld(pose,canElapsed) {
+function acceptCageWorld(pose,canElapsed,course) {
   if(!Array.isArray(pose)||pose.length!==13||pose.some(value=>!Number.isFinite(value)||Math.abs(value)>120)) return;
   const can=world.can;
   if(can&&Number.isFinite(canElapsed)&&canElapsed>=0&&canElapsed<=CAN_SETTLED&&canElapsed>(can.remoteElapsed??-1)){
     if(can.remoteElapsed!==null&&can.remoteElapsed<CAN_IMPACT&&canElapsed>=CAN_IMPACT) playCanImpact();
     can.remoteElapsed=canElapsed;
+  }
+  if(world.course&&Array.isArray(course)&&course.length===6&&[course[1],...course.slice(3)].every(n=>Number.isFinite(n)&&Math.abs(n)<32)){
+    const [door,angle,awake,x,y,z]=course;
+    Object.assign(world.course,{door,angle,wake:awake?0:null});Object.assign(world.course.spider,{x,y,z});
   }
   cageWindowTarget=pose;
   if(!cageWindowPose) cageWindowPose=pose.slice();
@@ -3530,7 +3665,7 @@ function receiveCoop(message) {
       if(cageGuest.phase==='next'&&message.index===cageGuest.index+1&&levels[message.index]){
         enterOutsideView(message.index,true);
       }
-    } else if(message.type==='view') acceptCageWorld(message.pose,message.can);
+    } else if(message.type==='view') acceptCageWorld(message.pose,message.can,message.course);
     else if(message.type==='signal') displayCageSignal(message.kind,message.count);
     else if(message.type==='replyAck') {
       const update=cageReplies.get(message.status)?.guest;
