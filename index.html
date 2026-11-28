@@ -189,7 +189,7 @@ html[lang=en] #coopLobby{align-items:safe center}
 .immersive .maze-tile:disabled{pointer-events:none}
 .immersive .maze-tile{background:#342d23}.immersive .maze-tile.wall{background:linear-gradient(140deg,#947545,#6d5535)}
 .immersive .maze-tile.mouse:after{width:55%;height:32%;border:solid #f4ddad;border-width:0 0 4px 4px;transform:rotate(-32deg);background:transparent;border-radius:0 0 0 8px}
-</style>
+#denName{width:min(12em,48vw);padding:8px;color:#fff2d9;border:1px solid #b59669;background:#34291f;border-radius:5px}.mode-actions{flex-wrap:wrap}</style>
 </head>
 <body>
 <canvas id="world" aria-label="第一人称 3D 游戏画面"></canvas><canvas id="software" aria-hidden="true" hidden></canvas><canvas id="effects" aria-hidden="true"></canvas><div id="shade"></div>
@@ -198,7 +198,7 @@ html[lang=en] #coopLobby{align-items:safe center}
     <div class="stamp">MOUSE AFTER DARK</div>
     <h1>墙缝夜行</h1>
     <p id="lead">厨房熄灯了。钻出墙缝，跟着气味找吃的。猫也醒着。</p>
-    <div class="mode-actions"><button id="start" class="primary">单人游戏 <span aria-hidden="true">→</span></button><button id="openCoop" class="utility">联机双人</button></div>
+    <div class="mode-actions"><button id="start" class="primary">单人游戏 <span aria-hidden="true">→</span></button><button id="visitDen" class="utility">我的小窝</button><button id="openCoop" class="utility">联机双人</button></div>
     <label class="level-picker" for="startLevel">起始关卡 <select id="startLevel"><option value="0">第 1 关 · 厨房</option><option value="1">第 2 关 · 储藏室</option><option value="2">第 3 关 · 水槽</option><option value="3">第 4 关 · 洗衣房</option></select></label>
     <div class="controls-list"><div><kbd>WASD</kbd> 移动</div><div>鼠标 / 拖动 转视角</div><div><kbd>C</kbd> 贴地潜行</div><div><kbd>Q</kbd> 嗅闻</div><div><kbd>Space</kbd> 跳跃</div><div><kbd>Shift</kbd> 冲刺</div></div>
     <p id="touchHelp">拖动画面转视角，点方向键移动。</p>
@@ -210,7 +210,7 @@ html[lang=en] #coopLobby{align-items:safe center}
   <header><span class="chapter" id="chapter"></span><strong id="levelName"></strong><span id="task"></span><div id="progress"></div><div id="clues"><span id="clueHeading">数字线索</span><span id="clueDigits"></span></div><span id="guestConnected" hidden>联机 · 笼外</span></header>
   <div id="tools"><button id="audio" class="utility" aria-label="切换音效" aria-pressed="true">音效 开</button><button id="pause" class="utility">暂停</button><button id="endCoop" class="utility" hidden>退出联机</button></div>
   <div id="alert"><span id="alertText">猫没发现你</span><span class="bar"><i id="alertFill"></i></span></div>
-  <span id="crosshair"></span><p id="prompt" hidden></p><button id="lockPrompt" type="button" hidden><kbd>E</kbd> 打开密码锁</button><button id="climbPrompt" type="button" hidden><kbd>F</kbd><span id="climbAction">抓住爬架</span></button><button id="pushCanPrompt" type="button" hidden><kbd>E</kbd><span>推下空罐头</span></button><p id="toast" role="status" hidden></p>
+  <span id="crosshair"></span><p id="prompt" hidden></p><button id="lockPrompt" type="button" hidden><kbd>E</kbd> 打开密码锁</button><button id="climbPrompt" type="button" hidden><kbd>F</kbd><span id="climbAction">抓住爬架</span></button><button id="pushCanPrompt" type="button" hidden><kbd>E</kbd><span id="noiseAction">推下空罐头</span></button><p id="toast" role="status" hidden></p>
   <div id="markers"></div>
   <div id="coopSignals" hidden>
     <strong id="cageLampText"></strong>
@@ -228,7 +228,7 @@ html[lang=en] #coopLobby{align-items:safe center}
     <div class="touch-group touch-actions"><button class="touch-button" data-key="KeyQ">嗅闻</button><button class="touch-button" data-key="KeyC">潜行</button><button class="touch-button" data-key="Space">跳跃</button><button class="touch-button" data-key="ShiftLeft">冲刺</button></div>
   </div>
 </div>
-<section id="denEnding" aria-labelledby="denTitle" hidden><div><h2 id="denTitle"></h2><p id="denCopy"></p></div><button id="denContinue" class="primary" type="button"></button></section>
+<section id="denEnding" aria-labelledby="denTitle" hidden><div><h2 id="denTitle"></h2><p id="denCopy"></p></div><label id="denNameLabel" hidden>小窝名字 <input id="denName" maxlength="24" autocomplete="off"></label><button id="denContinue" class="primary" type="button"></button></section>
 <div id="modal" hidden><section class="dialog" role="dialog" aria-modal="true" aria-labelledby="modalTitle"><div class="stamp" id="modalTag"></div><h2 id="modalTitle"></h2><p id="modalCopy"></p><div class="dialog-actions"><button id="modalAction" class="primary"><span aria-hidden="true">→</span></button><button id="modalOther" class="utility"></button></div></section></div>
 <div id="lockScreen" hidden>
   <section class="dialog" role="dialog" aria-modal="true" aria-labelledby="lockTitle">
@@ -372,6 +372,9 @@ const englishUi={
   "高处安全 · 猫在下面": "Safe up high · The cat is below",
   "推下空罐头": "Push the Empty Can",
   "等猫走向罐头，再下梯。": "Wait for the cat to head to the can, then climb down.",
+  "我的小窝":"My den","小窝名字":"Den name","猫正在找瓶盖":"The cat is looking for the cap","拉动棉线":"Pull the thread",
+  "棉线绷紧了，快从另一头溜走。":"The thread is taut. Slip out the other end.","叮啷！瓶盖落地了。":"Clink! The bottle cap dropped.",
+  "桌上摆着你从水槽带回的食物。":"The food you brought back from the sink is on the table.","线轴桌等着你从水槽带回第一顿晚餐。":"Your spool table awaits its first supper from the sink.",
   "猫正在查看罐头": "The cat is checking the can",
   "到家了": "Home at last",
   "你把奶酪、面包屑和饼干屑带回了小窝。": "You brought cheese, bread crumbs, and cookie crumbs home.",
@@ -1292,9 +1295,25 @@ function pantry() {
     box('c2a777',xx,.99,10.88,.44,.22,.026);
   }
   for(const x of [-2.8,1.73]) for(const z of [10.50,12.59]) box('5b5040',x,.83,z,.105,1.20,.112);
+  if(!cageRoom?.active){
+    // The toe kick is low; the open shaft behind it reaches a worktop.
+    const x=-2.8;
+    for(const side of [-1,1]) solid('876449',x+side*.85,.78,16.58,.16,1.56,2.32,{material:2});
+    solid('866044',x,.90,15.45,1.75,1.34,.14,{material:2,cover:true});
+    solid('bd925f',x,1.51,17.48,2.40,.14,1.66,{material:2,cover:true});
+    solid('72513d',x,.76,18.21,1.7,1.52,.12,{material:2});
+    box('d8ae72',x,.97,15.355,.48,.07,.08);
+    climbRail(x,16.65,0,1.58);
+    const nut=world.food.find(food=>food.name==='松子');
+    if(nut)Object.assign(nut,{x:x+.45,y:1.58,z:17.83});
+    world.bell={x:-.55,z:11.55,pulled:null,rang:false,landing:point(-5.05,11.55)};
+    box('e2cba0',-2.82,.17,11.55,4.56,.025,.027);
+    box('f4d292',-.55,.12,11.55,.035,.12,.035,{glow:.4});
+  } else {
   crate(-2.8,16.7,2.2,1.78,1.08);
   crate(-2.83,16.79,1.69,1.48,.65,'a58b61');
   box('9c8464',-2.83,1.41,16.79,1.69,.65,1.48,{material:2});
+  }
   crate(.4,19.35,2.32,1.34,.99);
   narrowPass(3.12,5.5,1.8,2.25,'8c7554');
   crate(-.12,3.0,1.55,1.23,.89);
@@ -1916,6 +1935,13 @@ function render(dt, filmTime) {
   }
   drawWater(filmTime);
   drawCan(inCage);
+  const bell=world.bell;
+  if(bell){
+    const elapsed=bell.pulled===null?0:Math.max(0,time-bell.pulled);
+    const drop=bell.pulled===null?0:clamp((elapsed-2.45)/.35,0,1);
+    draw(element('drum','d4b990',-5.93+drop*.88,.83-drop*drop*.78,11.55,.34,.058,.34,
+      {roll:drop*2+Math.sin(elapsed*18)*.19*(1-drop),glow:.15}));
+  }
   if(inCage){
     drawCageGrate(world.home.x,world.home.z,cageGuest.open?.58:0);
     if(cageWindowPose) drawCageGuestMouse(cageWindowPose,filmTime);
@@ -2061,7 +2087,15 @@ function nearbyCan() {
   const can=world.can;
   return can && can.pushedAt===null && player.ground && Math.abs(player.y-can.y)<.18 && distance(player,can)<1.07;
 }
+function nearBell(){
+  return world.bell&&world.bell.pulled===null&&player.low&&player.y<.1&&distance(player,world.bell)<1.05;
+}
 function pushCan() {
+  if(mode==='play'&&nearBell()){
+    world.bell.pulled=time;
+    tell('棉线绷紧了，快从另一头溜走。',2.4);
+    return true;
+  }
   if(mode!=='play'||!nearbyCan()) return false;
   world.can.pushedAt=time;
   $('pushCanPrompt').hidden=true;
@@ -2074,6 +2108,15 @@ function playCanImpact() {
   playTone(1577,.15,.08,'triangle',552);
 }
 function updateCan() {
+  const bell=world.bell;
+  if(bell&&bell.pulled!==null&&!bell.rang&&time-bell.pulled>=2.8){
+    bell.rang=true;
+    cat.distraction={target:bell.landing,until:time+10,checking:false};
+    cat.repath=0;
+    playTone(1550,.28,.11,'triangle',820);
+    playTone(1070,.22,.07,'sine',640,.11);
+    tell('叮啷！瓶盖落地了。',1.6);
+  }
   const can=world.can;
   if(!can||can.pushedAt===null||can.landed||time-can.pushedAt<CAN_IMPACT) return;
   can.landed=true;
@@ -2479,7 +2522,7 @@ function updateCat(dt,sprint) {
   $('alert').classList.toggle('danger',!aboveCat&&cat.phase==='hunt');
   $('alert').classList.toggle('searching',!aboveCat&&cat.phase==='search');
   const lungeHint={brace:'猫压低了身子，往旁边躲！',dash:'猫扑过来了！',slide:'猫滑出去了',recover:'猫正在站稳'};
-  const status=lungeHint[cat.lunge?.stage]??(distracted?'猫正在查看罐头':aboveCat?'高处安全 · 猫在下面':cat.phase==='hunt'?'猫正在追你':
+  const status=lungeHint[cat.lunge?.stage]??(distracted?(world.bell?'猫正在找瓶盖':'猫正在查看罐头'):aboveCat?'高处安全 · 猫在下面':cat.phase==='hunt'?'猫正在追你':
     cat.phase==='search'?(cat.search.stage==='intercept'?'猫绕向推车另一头':cat.search.stage==='guard'?'猫蹲在推车口':cat.search.stage==='listen'?'猫停下听动静':'猫正在搜查附近'):
     hidden?'你藏在阴影里':cat.phase==='investigate'?'猫正在查看动静':'猫没发现你');
   setText('alertText',status);
@@ -2642,7 +2685,8 @@ function updateGoals() {
   const cageHint=coopHost()?cageHostHint():null;
   $('lockPrompt').hidden=Boolean(cageRound)||missing>0||!nearLockedDen();
   let hint='';
-  const climb=nearbyClimb(), can=nearbyCan();
+  const climb=nearbyClimb(), bell=nearBell(), can=bell||nearbyCan();
+  if(can)setText('noiseAction',bell?'拉动棉线':'推下空罐头');
   $('climbPrompt').hidden=!climb;
   $('pushCanPrompt').hidden=!can;
   if(climb) setText('climbAction',climb.up?'抓住爬架':'抓住下行爬架');
@@ -2725,6 +2769,8 @@ function startHomecoming() {
   playTone(440,.39,.052,'sine',440,1.02);
   playTone(523,.58,.064,'sine',523,1.29);
   if(inCage) return;
+  if(!coopHost()){try{localStorage.setItem('mouse.den.stock','1');}catch{}}
+  $('denNameLabel').hidden=true;
   mode='homecoming';pressed.clear();drag=null;unlockPointer();
   $('hud').hidden=true;
   paint?.clearRect(0,0,viewportWidth,viewportHeight);
@@ -2735,7 +2781,23 @@ function startHomecoming() {
   $('denContinue').focus({preventScroll:true});
   cageSnapshot();
 }
+function visitDen(){
+  createLevel(2);
+  const home=world.homecoming;
+  home.arrivedAt=performance.now()-4000;
+  home.origin={x:world.home.x,y:.32,z:world.home.z,yaw:0,pitch:0};
+  let name='',stocked=false;
+  try{name=localStorage.getItem('mouse.den.name')||'';stocked=localStorage.getItem('mouse.den.stock')==='1';}catch{}
+  if(!stocked)home.food=[];
+  mode='den';$('menu').hidden=true;$('hud').hidden=true;
+  paint?.clearRect(0,0,viewportWidth,viewportHeight);
+  $('denEnding').hidden=false;$('denNameLabel').hidden=false;$('denName').value=name;
+  setText('denTitle',name||'我的小窝');
+  setText('denCopy',stocked?'桌上摆着你从水槽带回的食物。':'线轴桌等着你从水槽带回第一顿晚餐。');
+  setText('denContinue','返回主菜单');$('denContinue').focus();
+}
 function continueFromDen() {
+  if(mode==='den'){homeMenu();return;}
   if(mode!=='homecoming') return;
   if(coopHost()){
     showModal('next');
@@ -2814,6 +2876,12 @@ function activate(code) {
 }
 function inputs() {
   $('modalAction').insertBefore(document.createTextNode(''),$('modalAction').firstChild);
+  $('visitDen').addEventListener('click',visitDen);
+  $('denName').addEventListener('input',()=>{
+    const name=$('denName').value.trim();
+    try{localStorage.setItem('mouse.den.name',name);}catch{}
+    setText('denTitle',name||'我的小窝');
+  });
   $('start').addEventListener('click',()=>begin(selectedLevel()));
   $('climbPrompt').addEventListener('click',startClimbing);
   $('pushCanPrompt').addEventListener('click',pushCan);
