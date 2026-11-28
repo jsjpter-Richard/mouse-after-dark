@@ -406,6 +406,9 @@ const englishUi={
   "第 3 关 · 水槽": "Level 3 · Sink",
   "第 4 关 · 洗衣房": "Level 4 · Laundry",
   "越过水槽": "Across the Sink",
+  "左架有食物。右侧从木箱起跳，沿金梯上吊灯。":"Search the left rack. On the right, jump from the crate and climb to the pendant light.",
+  "检查左侧高架和右侧吊灯，找齐奶酪图案。":"Collect the marked cheese on the left rack and the right pendant light.",
+  "摔晕了，缓一下。":"Dazed from the fall. Catch your breath.",
   "洗衣房的高架": "The Laundry Rack",
   "沿金色爬架上桌，跳过水槽的干踏点。墙洞在地面。": "Climb the gold rungs, then jump across the dry pads. The exit is at floor level.",
   "沿金色爬架上桌，跳过水槽的干踏点，找齐奶酪图案。": "Climb the gold rungs and jump across the dry pads to find all the cheese symbols.",
@@ -878,11 +881,11 @@ const levels = [
     scene:'sink', pounceReach:1.08
   },
   {
-    title:'洗衣房的高架', intro:'沿金色爬架上高架，走过窄板。墙洞在地面。',
-    coopIntro:'沿金色爬架上高架，走过窄板，找齐奶酪图案。',
+    title:'洗衣房的高架', intro:'左架有食物。右侧从木箱起跳，沿金梯上吊灯。',
+    coopIntro:'检查左侧高架和右侧吊灯，找齐奶酪图案。',
     width:14, depth:18.8, spawn:[-2.92,1.44,0], home:[2.62,18.37],
     light:[-1.95,4.5,10.9], fog:'343d55',
-    food:[[1.95,6.25,'饼干屑','dfa96e'],[-3.38,10.46,'松子','eac47a',2.24],[-2.66,14.37,'奶酪','ffbe60',2.24]],
+    food:[[4.85,13.12,'饼干屑','dfa96e',3.10],[-3.38,10.46,'松子','eac47a',2.24],[-2.66,14.37,'奶酪','ffbe60',2.24]],
     patrol:[[1.7,3.66],[4.65,6.5],[4.75,11.1],[4.4,15.45],[2,16.8],[0,17.05],
       [-2.2,17.08],[-5.13,16.65],[-4.99,14.76],[-5.37,12.64],[-5.45,8.7],
       [-5.21,5.15],[-5.12,2.09],[-3.14,2.12],[-.95,2.28]],
@@ -1498,6 +1501,34 @@ function laundryRoom() {
   crate(-6.24,14.75,1.24,1.35,.72,'6c6472');
   box('6c8387',2.75,.025,7.4,3.1,.051,3.0,{material:3});
   for(const z of [5.95,8.85]) box('b68c69',2.75,.035,z,3.07,.025,.08,{material:3});
+  // The shelf gaps are short enough for a walking jump. Brackets hang off the right wall.
+  const lane=4.85, first=1.24, middle=2.08, lamp=3.10;
+  crate(lane,4.55,1.85,2.0,first,'a47650');
+  climbRail(lane,3.55,0,first);
+  function linenShelf(z,top,length,tint){
+    solid('986f50',lane,top-.095,z,1.65,.19,length,{material:2});
+    box(tint,lane,top+.004,z,1.47,.008,length-.12,{material:3});
+    for(const end of [-1,1]){
+      const bracketZ=z+end*(length*.5-.22);
+      box('58676c',5.94,top-.21,bracketZ,1.91,.095,.11);
+      box('c7aa76',lane,top+.012,z+end*(length*.5-.09),1.54,.016,.10);
+    }
+  }
+  linenShelf(7.11,first,1.70,'84978b');
+  linenShelf(8.99,middle,2.06,'84978b');
+  climbRail(lane,7.96,first,middle);
+  linenShelf(11.22,middle,1.28,'bd9870');
+  // A square enamel pendant with a walkable rim and bulb below the landing.
+  solid('647c72',lane,lamp-.085,12.98,1.78,.17,2.24);
+  box('c0ac82',lane,lamp+.012,12.98,1.61,.024,2.07,{material:2});
+  for(const side of [-1,1]){
+    box('b49a6d',lane+side*.83,lamp-.15,12.98,.07,.17,2.20);
+    box('514e47',lane+side*.68,3.83,13.25,.035,1.46,.035);
+  }
+  box('9b8362',lane,4.52,13.25,1.53,.12,.26);
+  place('sphere','ffdb94',lane,lamp-.29,12.98,.79,.46,.79,{glow:.93});
+  climbRail(lane,11.86,middle,lamp);
+  climbRail(lane,14.10,0,lamp,-1,true);
   makeWindow(-1.48,18.64,2.73,1.72,2.95);
 }
 const levelScenes={kitchen,pantry,sink:sinkRoom,laundry:laundryRoom};
@@ -1746,7 +1777,7 @@ function createLevel(index) {
   levelScenes[level.scene]();
   bakeFloorShade();
   const [x,z,yaw]=level.spawn;
-  player={x,z,y:0,yaw,pitch:.035,eye:.33,vY:0,stamina:1,stance:false,low:false,ground:true,gait:0,amount:0,climb:null,splashUntil:0};
+  player={x,z,y:0,yaw,pitch:.035,eye:.33,vY:0,stamina:1,stance:false,low:false,ground:true,gait:0,amount:0,climb:null,stunUntil:0,splashUntil:0};
   const [cx,cz]=level.patrol[0], [nx,nz]=level.patrol[1];
   cat={
     x:cx,z:cz,yaw:angleTo(nx-cx,nz-cz),alert:0,goal:1,phase:'patrol',
@@ -1784,7 +1815,7 @@ function catPart(type,color,x,y,z,w,h,d,extra={}) {
 }
 function setupCat() {
   catShapes=[];
-  const fur='696f76', dark='4a515e', stripe='454c56', white='9c9792';
+  const fur='d49050', dark='a35d38', stripe='854626', white='eed9b9';
   catPart('sphere',fur,0,.77,-.02,.80,.88,1.57);
   catPart('sphere',dark,0,.82,-.55,.77,.77,.84);
   catPart('sphere',fur,0,.92,.44,.76,.91,.82);
@@ -1792,9 +1823,11 @@ function setupCat() {
   catPart('sphere',fur,0,1.155,.77,.76,.68,.67);
   for(const side of [-1,1]) {
     catPart('cone',dark,side*.252,1.57,.72,.30,.48,.32,{roll:side*-.31});
-    catPart('cone','aa827e',side*.273,1.57,.855,.155,.29,.08,{roll:side*-.31});
+    catPart('sphere',stripe,side*.112,1.399,.932,.068,.16,.084,{roll:side*.43});
+    catPart('sphere',white,side*.207,1.277,1.025,.17,.045,.085,{roll:side*.13});
+    catPart('cone','de9d87',side*.273,1.57,.855,.155,.29,.08,{roll:side*-.31});
     catPart('sphere','352d28',side*.188,1.222,1.041,.206,.143,.073);
-    catPart('sphere','f3b955',side*.185,1.228,1.073,.130,.100,.038,{glow:.88});
+    catPart('sphere','b5cb83',side*.185,1.228,1.073,.130,.100,.038,{glow:.88});
     catPart('sphere','2a2724',side*.185,1.228,1.095,.028,.084,.017,{glow:.40});
     catPart('sphere',white,side*.109,1.055,1.065,.244,.204,.16);
     for(let i=0;i<3;i++) catPart('box','b8a79a',side*.256,1.055+(i-1)*.035,1.11,.30,.009,.01,{roll:side*(i-1)*.16});
@@ -1808,7 +1841,7 @@ function setupCat() {
   catPart('sphere','bd8179',0,1.104,1.164,.139,.085,.062);
   for(let i=0;i<9;i++) {
     const f=i/8;
-    catPart('sphere',i%2?dark:fur,0,.65+f*f*.93,-.82-f*.93,.23-f*.08,.23-f*.08,.26,{tail:f});
+    catPart('sphere',i===8?white:i%3===1?stripe:fur,0,.65+f*f*.93,-.82-f*.93,.23-f*.08,.23-f*.08,.26,{tail:f});
   }
 }
 function setView(x,y,z,yaw,pitch) {
@@ -2027,6 +2060,10 @@ function drawEffects(dt,filmTime) {
   const w=viewportWidth, h=viewportHeight;
   paint.clearRect(0,0,w,h);
   if(mode==='menu') return;
+  if(time<player.stunUntil){
+    const fade=clamp((player.stunUntil-time)/.95,0,1);
+    paint.fillStyle='rgba(54,44,63,'+(.30*fade)+')';paint.fillRect(0,0,w,h);
+  }
   if(player.splashUntil>time){
     paint.fillStyle='rgba(96,194,215,'+((player.splashUntil-time)*.72)+')';
     paint.fillRect(0,0,w,h);
@@ -2133,7 +2170,14 @@ function airborne(dt) {
     for(const o of world.obstacles) {
       if(before>=o.max-.025 && next<=o.max && intersects(o,player.x,player.z,.15)) below=Math.max(below,o.max);
     }
-    if(next<=below) {player.y=below;player.vY=0;player.ground=true;return;}
+    if(next<=below) {
+      if(world.level.scene==='laundry'&&player.vY < -5.5){
+        player.stunUntil=time+.95;player.amount=0;
+        playTone(89,.18,.08,'triangle',44);
+        tell('摔晕了，缓一下。',.95);
+      }
+      player.y=below;player.vY=0;player.ground=true;return;
+    }
   } else if(blocks(player.x,player.z,next,height)){
     player.vY=0;return;
   }
@@ -2192,6 +2236,7 @@ function updateCan() {
   if(player.y>=CAT_SAFE_HEIGHT) tell('等猫走向罐头，再下梯。',2.8);
 }
 function startClimbing() {
+  if(time<player.stunUntil)return;
   if(mode!=='play') return;
   const available=nearbyClimb();
   if(!available) return;
@@ -2238,6 +2283,7 @@ function checkWater() {
   return true;
 }
 function updatePlayer(dt) {
+  if(time<player.stunUntil)return false;
   const wasGrounded=player.ground;
   const low=player.stance||blocks(player.x,player.z,player.y,.355);
   player.low=low;
@@ -2642,6 +2688,7 @@ function renderLockHistory() {
   setText('lockHistory','试过的顺序　'+attempts.join(' · '));
 }
 function openDenLock() {
+  if(time<player.stunUntil)return;
   if(coopHost()||mode!=='play'||!nearLockedDen()) return;
   const digits=collectedDigits();
   if(digits.length!==world.food.length) return;
@@ -2927,6 +2974,7 @@ function look(dx,dy) {
   player.pitch=clamp(player.pitch-dy*.0031,-1.22,1.22);
 }
 function activate(code) {
+  if(time<player.stunUntil)return;
   if(code==='KeyF') startClimbing();
   if(code==='KeyE') {
     if(pushCan()) return;
