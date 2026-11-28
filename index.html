@@ -418,6 +418,10 @@ const englishUi={
   "撞开柜门":"Bump the cabinet door",
   "从柜子左侧的金梯爬进一层。":"Use the gold ladder on the cabinet\u2019s left side to enter the first level.",
   "顺着斜板走，到断口按空格跳。":"Follow the board and press Space to jump the gap.",
+  "在柜内 · 猫进不来":"Inside the cabinet \u00b7 safe from the cat",
+  "钻到柜底，按 F 抓住洞里的梯子。":"Go under the cabinet and press F to grab the hatch ladder.",
+  "踏上柜顶中央的滑梯，滑到灶台。":"Step onto the chute on the roof to slide to the stove.",
+  "蜘蛛扑来了！从柜底再试。":"The spider lunged! Try again from under the cabinet.",
   "转动锅柄":"Turn the pan handle",
   "摸黑向右走，撞开柜门。":"Feel your way right and bump the cupboard door.",
   "门开了一条缝。快找断梯！":"Light through the crack! Find the broken stairs.",
@@ -1527,7 +1531,12 @@ const stoveDangers=[
 ];
 const cabinetFirst = .66;
 const cabinetSecond = 1.43;
-const cabinetTop = 2.24;
+const cabinetThird = 2.18;
+const cabinetTop = 2.99;
+const stoveTop = 2.24;
+const cabinetHatch = {x:4.85,z:3.18};
+const slideStart = {x:4.85,y:cabinetTop,z:8.02};
+const slideEnd = {x:4.85,y:stoveTop,z:8.53};
 const cabinetDoor = {x:3.84,z:4.16};
 const cabinetRamps = [
   {x:4.85,z0:3.94,z1:5.04,y0:cabinetFirst,y1:1.00},
@@ -1535,22 +1544,31 @@ const cabinetRamps = [
 ];
 function buildStoveCourse(){
   const lane=4.85, wood={material:2};
-  world.course={door:false,entered:false,wake:null,noise:0,darkness:0,
+  world.course={door:false,entered:false,wake:null,noise:0,darkness:0,pushStart:null,doorAngle:0,
     spider:{x:5.50,z:3.65,y:cabinetFirst+.11},angle:0,turns:0};
-  // The left hatch sits over a lit space underneath the cabinet.
-  solid('806045',lane,.60,4.98,2.42,.12,5.62,{...wood,cover:true});
-  solid('82664f',lane,1.45,2.24,2.42,1.58,.16,wood);
-  solid('926a4e',3.64,1.45,2.55,.16,1.58,.49,wood);
-  solid('906a50',3.64,1.45,6.24,.16,1.58,3.14,wood);
-  obstacle(3.64,1.44,4.12,.11,1.54,1.25);
-  solid('71533e',6.06,1.45,5.0,.16,1.58,5.65,wood);
-  for(const z of [2.42,7.61])for(const x of [3.76,5.94])
-    solid('806049',x,.31,z,.16,.62,.17,wood);
-  const entry={lower:{x:3.16,y:0,z:3.12},upper:{x:4.16,y:cabinetFirst,z:3.12},face:Math.PI/2};
+  // Four boards form the bottom. The opening is under the cabinet, between its legs.
+  solid('806045',lane,.60,2.47,2.42,.12,.46,{...wood,cover:true});
+  solid('806045',lane,.60,5.805,2.42,.12,4.03,{...wood,cover:true});
+  for(const x of [3.995,5.705]) solid('806045',x,.60,3.245,.71,.12,1.09,{...wood,cover:true});
+  solid('82664f',lane,1.79,2.24,2.58,2.26,.16,wood);
+  solid('82664f',lane,1.79,7.96,2.58,2.26,.14,wood);
+  solid('926a4e',3.64,1.79,2.84,.16,2.26,1.2,wood);
+  solid('906a50',3.64,1.79,6.31,.16,2.26,3.3,wood);
+  solid('906a50',3.64,2.35,4.25,.16,1.14,1.42,wood);
+  obstacle(3.64,1.22,4.17,.11,1.12,1.42);
+  solid('71533e',6.06,1.79,5.10,.16,2.26,5.75,wood);
+  for(const z of [2.42,7.70])for(const x of [3.76,5.94])
+    solid('806049',x,.31,z,.18,.62,.20,wood);
+  const entry={lower:{...cabinetHatch,y:0},upper:{x:lane,y:cabinetFirst,z:3.83},face:0,throughFloor:true};
   world.climbs.push(entry);
-  for(const z of [2.88,3.36])box('d1a160',3.61,.34,z,.075,.68,.075);
-  for(const y of [.15,.33,.51])box('e2bf86',3.57,y,3.12,.08,.044,.55,{glow:.3});
-  box('e7bd79',3.62,.68,3.12,.10,.025,.68,{glow:.38});
+  for(const x of [4.59,5.11])box('d1a160',x,.34,2.96,.07,.68,.075);
+  for(const y of [.15,.33,.51])box('e2bf86',lane,y,2.94,.59,.044,.08,{glow:.34});
+  box('e7bd79',lane,.671,3.77,.68,.02,.09,{glow:.40});
+  for(const [x,z,h,color] of [[5.67,2.81,.24,'637d74'],[4.00,2.64,.31,'b68352'],[5.73,5.15,.3,'927355']]){
+    box(color,x,cabinetFirst+h/2,z,.34,h,.39,wood);
+    box('dec8a3',x,cabinetFirst+h*.58,z-.198,.14,.09,.015);
+  }
+  for(let i=0;i<6;i++)box('af8f63',4.02+i*.13,.008,3.18,.075,.014,.032,{glow:.19});
 
   // The free end of the second board is within an ordinary walking jump.
   for(const ramp of cabinetRamps){
@@ -1559,18 +1577,42 @@ function buildStoveCourse(){
     box('b59570',ramp.x,(ramp.y0+ramp.y1)/2-.055,z,1.24,.11,Math.hypot(run,rise),{material:2,pitch});
     box('e7bd79',ramp.x,ramp.y1-.018,ramp.z1-.045,1.16,.029,.082,{glow:.16});
   }
+  box('b59570',lane,.945,5.085,1.24,.11,.09,wood);
   solid('ae8968',lane,cabinetSecond-.065,7.39,2.05,.13,.90,{...wood,cover:true});
-  solid('b58b60',lane,cabinetTop-.07,4.47,2.56,.14,4.58,{...wood,cover:true});
-  for(const x of [3.93,5.77])solid('b58b60',x,cabinetTop-.07,7.18,.73,.14,.9,wood);
-  solid('b58b60',lane,cabinetTop-.07,7.78,2.56,.14,.65,wood);
   box('b59570',lane,cabinetSecond-.055,6.825,1.24,.11,.23,wood);
-  climbRail(lane,7.28,cabinetSecond,cabinetTop);
+  climbRail(lane,7.15,cabinetSecond,cabinetThird);
   world.climbs.at(-1).face=0;
-  solid('758281',lane,cabinetTop-.09,9.93,2.65,.18,4.03);
-  // Crouch through the tunnel and hop onto the pot counter.
-  for(const x of [3.88,5.82])solid('636e70',x,cabinetTop+.23,11.68,.12,.46,1.0);
-  solid('88928a',lane,cabinetTop+.31,11.64,2.05,.10,.96,{cover:true});
-  solid('758281',lane,cabinetTop-.07,12.20,2.04,.14,.74);
+
+  solid('b18c60',4.05,cabinetThird-.062,6.89,.80,.124,1.85,wood);
+  solid('b18c60',lane,cabinetThird-.062,7.77,2.36,.124,.32,wood);
+  solid('be9666',5.50,cabinetThird-.062,6.76,.90,.124,1.50,wood);
+  climbRail(4.05,6.96,cabinetThird,cabinetTop);
+  world.climbs.at(-1).face=0;
+  solid('bb9163',lane,cabinetTop-.07,4.20,2.56,.14,4.00,wood);
+  solid('bb9163',5.18,cabinetTop-.07,6.75,1.90,.14,1.13,wood);
+  solid('bb9163',lane,cabinetTop-.07,7.66,2.56,.14,.80,wood);
+  for(const [x,z,y] of [[5.60,6.80,cabinetTop],[3.92,7.75,cabinetThird],[5.55,7.20,cabinetThird]]){
+    for(let i=0;i<3;i++)box(['9ca99a','c38b72','c5b18e'][i],x,y+.026+i*.059,z,.30+i*.04,.055,.43,{material:3});
+  }
+  for(const z of [2.62,5.36,7.37]){
+    box('6c5240',3.542,1.68,z,.055,1.88,.08,wood);
+    box('c7a374',3.516,2.79,z,.04,.065,.14,wood);
+  }
+  for(const [x,z,size] of [[5.7,4.72,.26],[5.68,5.21,.19]]){
+    place('tube','bca282',x,cabinetTop+size*.51,z,size*.74,size,size*.74,wood);
+    place('tube','9c7461',x,cabinetTop+size*.51,z,size*.85,size*.54,size*.85,{material:3});
+  }
+  box('a49276',5.58,cabinetTop+.013,6.44,.66,.026,1.35,{material:3});
+  // The chute ends on a clear stove landing before the first trap.
+  const dz=slideEnd.z-slideStart.z,dy=slideEnd.y-slideStart.y;
+  const pitch=-Math.atan2(dy,dz), length=Math.hypot(dy,dz);
+  for(const [x,h,w] of [[lane,-.055,1.04],[lane-.57,.025,.10],[lane+.57,.025,.10]]){
+    box(x===lane?'839e96':'d1a466',x,(slideStart.y+slideEnd.y)/2+h,(slideStart.z+slideEnd.z)/2,w,.11,length,{pitch,material:2});
+  }
+  solid('758281',lane,stoveTop-.09,9.93,2.65,.18,4.03);
+  for(const x of [3.88,5.82])solid('636e70',x,stoveTop+.23,11.68,.12,.46,1.0);
+  solid('88928a',lane,stoveTop+.31,11.57,2.05,.10,.82,{cover:true});
+  solid('758281',lane,stoveTop-.07,12.20,2.04,.14,.74);
   solid('af936e',lane,2.28,13.67,2.17,.16,2.24,wood);
   obstacle(panCenter.x,2.48,panCenter.z,.95,.24,.95);
   // The handle is the only bridge high enough to reach the first step.
@@ -1588,12 +1630,17 @@ function buildStoveCourse(){
 }
 function insideCabinet(){
   return Boolean(world.course&&player.x>3.64&&player.x<6.03&&player.z>2.26&&
-    player.z<7.79&&player.y>=cabinetFirst-.035&&player.y<cabinetSecond-.04);
+    player.z<7.91&&player.y>=cabinetFirst-.035&&player.y<cabinetSecond-.04);
+}
+function shelteredInCabinet(){
+  return Boolean(world.course&&(player.climb?.rail.throughFloor||
+    (player.x>3.74&&player.x<5.96&&player.z>2.36&&player.z<7.93&&
+      (player.y>=cabinetFirst-.04||distance(player,cabinetHatch)<.63)&&player.y<cabinetTop)));
 }
 function cabinetRampAt(x,z,y){
   if(!world.course)return null;
   for(const ramp of cabinetRamps){
-    const end=ramp.y1===cabinetSecond?6.96:ramp.z1;
+    const end=ramp.y1===cabinetSecond?6.96:ramp.z1+.09;
     if(Math.abs(x-ramp.x)>.68||z<ramp.z0||z>end)continue;
     const surface=mix(ramp.y0,ramp.y1,clamp((z-ramp.z0)/(ramp.z1-ramp.z0),0,1));
     if(Math.abs(y-surface)<.57)return surface;
@@ -1601,16 +1648,19 @@ function cabinetRampAt(x,z,y){
   return null;
 }
 function nearCabinetDoor(){
-  return insideCabinet()&&!world.course.door&&player.y<cabinetFirst+.16&&distance(player,cabinetDoor)<.65;
+  return insideCabinet()&&!world.course.door&&world.course.pushStart===null&&player.y<cabinetFirst+.16&&distance(player,cabinetDoor)<.65;
 }
 function bumpCabinetDoor(){
   if(!nearCabinetDoor()||time<player.stunUntil)return false;
   const course=world.course;
+  course.pushStart=time;
+  return true;
+}
+function finishDoorPush(course){
   course.door=true;
   course.wake??=time;
   playTone(87,.27,.11,'triangle',51);
   tell('门缝透光了。沿斜木板走，到断口跳过去。',2.7);
-  return true;
 }
 function panNear(){
   return world.course&&world.course.turns<3&&player.y>=2.34&&player.y<2.75&&distance(player,panCenter)<1.24;
@@ -1623,10 +1673,10 @@ function turnPan(){
 }
 function resetCourse(message,onStove){
   const c=world.course;
-  Object.assign(player,onStove?{x:4.85,y:cabinetTop,z:8.12}:{x:3.16,y:0,z:3.12},
+  Object.assign(player,onStove?{...slideEnd}:{...cabinetHatch,y:0},
     {yaw:onStove?0:Math.PI/2,pitch:0,ground:true,vY:0,climb:null,stunUntil:time+.35});
   if(!onStove){
-    c.door=false;c.wake=null;c.noise=0;c.entered=false;c.darkness=0;
+    c.door=false;c.wake=null;c.noise=0;c.entered=false;c.darkness=0;c.pushStart=null;c.doorAngle=0;
     Object.assign(c.spider,{x:5.50,z:3.65,y:cabinetFirst+.11});
   }
   player.amount=0;
@@ -1641,8 +1691,15 @@ function updateStoveCourse(dt,sprint){
   const w=c.angle===target?Math.abs(Math.sin(target))*1.76+.32:.24;
   const d=c.angle===target?Math.abs(Math.cos(target))*1.76+.32:.24;
   Object.assign(c.bridge,{x:bx,z:bz,x0:bx-w/2,x1:bx+w/2,z0:bz-d/2,z1:bz+d/2});
+  if(c.pushStart!==null){
+    const elapsed=time-c.pushStart;
+    const opening=clamp((elapsed-.16)/.23,0,1);
+    c.doorAngle=.23*opening*opening*(3-2*opening);
+    if(!c.door&&elapsed>=.20)finishDoorPush(c);
+    if(elapsed>=.44)c.pushStart=null;
+  }
   const onFirstFloor=insideCabinet();
-  c.darkness=mix(c.darkness,onFirstFloor?(c.door?.28:.995):0,1-Math.exp(-dt*15));
+  c.darkness=mix(c.darkness,onFirstFloor?(c.door?.22:.78):0,1-Math.exp(-dt*15));
   if(onFirstFloor){
     if(!c.entered){
       c.entered=true;
@@ -1656,10 +1713,10 @@ function updateStoveCourse(dt,sprint){
       const stride=Math.min(len,dt*.92);
       sp.x+=dx*stride/(len||1);
       sp.z+=dz*stride/(len||1);
-      if(len<.25&&player.y<cabinetFirst+.22)resetCourse('蜘蛛扑来了！从桌角再试。',false);
+      if(len<.25&&player.y<cabinetFirst+.22)resetCourse('蜘蛛扑来了！从柜底再试。',false);
     }
   } else {c.entered=false;c.noise=0;}
-  if(player.y>=cabinetTop-.04&&player.y<cabinetTop+.32&&player.z>7.95&&player.z<11.42&&player.x>3.5){
+  if(player.y>=stoveTop-.04&&player.y<stoveTop+.32&&player.z>8.20&&player.z<11.42&&player.x>3.5){
     for(const h of stoveDangers)if(distance(player,h)<(h.fire?.39:.30)){
       resetCourse(h.fire?'火苗太烫了，绕开亮着的炉圈。':'夹子弹起来了，绕过金属踏片。',true);break;
     }
@@ -1668,8 +1725,9 @@ function updateStoveCourse(dt,sprint){
 function drawStoveCourse(t){
   const c=world.course;if(!c)return;
   const piece=(type,col,x,y,z,w,h,d,opts)=>draw(element(type,col,x,y,z,w,h,d,opts));
-  piece('box','785740',3.66-(c.door?.12:0),1.44,4.12,.11,1.54,1.25,{yaw:c.door?.23:0,material:2});
-  piece('box','d3ae73',3.73-(c.door?.12:0),.94,4.52,.065,.06,.27,{glow:.25});
+  const doorX=3.66-Math.sin(c.doorAngle)*.68;
+  piece('box','785740',doorX,1.22,4.17,.11,1.12,1.42,{yaw:c.doorAngle,material:2});
+  piece('box','d3ae73',doorX+.07,.94,4.52,.066,.06,.27,{glow:.26});
   if(c.door){
     piece('box','ffe2a0',3.68,1.12,4.66,.035,.83,.07,{glow:1});
     for(let i=0;i<7;i++)piece('box','d6a366',3.76+i*.21,cabinetFirst+.009,4.66-i*.07,.225,.016,.10+i*.035,{glow:.48-i*.045});
@@ -1686,16 +1744,16 @@ function drawStoveCourse(t){
   }
   for(const h of stoveDangers){
     if(h.fire){
-      piece('tube','343d40',h.x,cabinetTop+.035,h.z,.83,.07,.83);
+      piece('tube','343d40',h.x,stoveTop+.035,h.z,.83,.07,.83);
       for(let j=0;j<8;j++){
         const a=j*Math.PI/4;
-        piece('cone',j%2?'f7ad51':'63b8df',h.x+.29*Math.cos(a),1.92,h.z+.29*Math.sin(a),.12,.22+.065*Math.sin(t*7+j),.12,{glow:.9});
+        piece('cone',j%2?'f7ad51':'63b8df',h.x+.29*Math.cos(a),stoveTop+.16,h.z+.29*Math.sin(a),.12,.22+.065*Math.sin(t*7+j),.12,{glow:.9});
       }
     }else{
-      piece('box','bf9162',h.x,cabinetTop+.02,h.z,.53,.04,.57);
-      piece('box','bebcb0',h.x,cabinetTop+.055,h.z,.21,.022,.20);
-      for(const side of [-1,1])piece('box','979c99',h.x+side*.21,cabinetTop+.12,h.z,.033,.18,.42);
-      piece('box','adb1aa',h.x,cabinetTop+.205,h.z-.19,.44,.035,.035);
+      piece('box','bf9162',h.x,stoveTop+.02,h.z,.53,.04,.57);
+      piece('box','bebcb0',h.x,stoveTop+.055,h.z,.21,.022,.20);
+      for(const side of [-1,1])piece('box','979c99',h.x+side*.21,stoveTop+.12,h.z,.033,.18,.42);
+      piece('box','adb1aa',h.x,stoveTop+.205,h.z-.19,.44,.035,.035);
     }
   }
   piece('drum','566169',panCenter.x,2.48,panCenter.z,1.13,.24,1.13);
@@ -2186,12 +2244,14 @@ function render(dt, filmTime) {
   const actor=inCage&&cageWindowPose?
     {x:cageWindowPose[7],z:cageWindowPose[8],yaw:cageWindowPose[9],gait:cageWindowPose[10],speed:cageWindowPose[11],lunge:{stage:['','','brace','dash','slide','recover'][cageWindowPose[12]]},phase:cageWindowPose[12]?'hunt':'patrol'}:
     mode==='menu'?{x:3.3+Math.sin(filmTime*.63)*.5,z:5.6,yaw:-2.63,gait:filmTime*1.5,speed:.5,phase:'patrol'}:cat;
-  if(software) softwareStart(level,actor,fog,denGlow);
+  const cabinetLamp=!inCage&&insideCabinet()?
+    (world.course.door?[3.77,1.36,4.42]:[player.x,player.y+.46,player.z]):null;
+  if(software) softwareStart(cabinetLamp?{...level,light:cabinetLamp}:level,actor,fog,denGlow);
   else {
     gl.clearColor(...fog,1);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);
     gl.uniformMatrix4fv(shader.View,false,view.matrix);
     gl.uniform3fv(shader.Eye,view.position);
-    gl.uniform3fv(shader.Lamp,level.light);
+    gl.uniform3fv(shader.Lamp,cabinetLamp||level.light);
     gl.uniform3fv(shader.Fog,fog);
     gl.uniform2f(shader.Room,level.width/2,level.depth);
     gl.uniform3f(shader.Cat,actor.x,actor.z,1);
@@ -2233,7 +2293,11 @@ function drawEffects(dt,filmTime) {
   if(mode==='menu') return;
   const course=world.course;
   if(course?.darkness>.015){
-    paint.fillStyle='rgba(3,2,2,'+course.darkness+')';
+    const sight=paint.createRadialGradient(w*.50,h*.49,h*.13,w*.50,h*.49,Math.max(w,h)*.58);
+    sight.addColorStop(0,'rgba(12,8,5,'+course.darkness*.30+')');
+    sight.addColorStop(.50,'rgba(9,6,4,'+course.darkness*.65+')');
+    sight.addColorStop(1,'rgba(3,2,2,'+course.darkness+')');
+    paint.fillStyle=sight;
     paint.fillRect(0,0,w,h);
     if(insideCabinet()&&!course.door){
       const dx=cabinetDoor.x-view.position[0],dy=.95-view.position[1],dz=4.48-view.position[2];
@@ -2262,6 +2326,21 @@ function drawEffects(dt,filmTime) {
       }
     }
   }
+  if(course?.pushStart!=null){
+    const extend=Math.sin(Math.PI*clamp((time-course.pushStart)/.44,0,1));
+    for(const side of [-1,1]){
+      const x=w*(.5+side*(.22-.11*extend)), y=h*(1.02-.46*extend);
+      paint.save();paint.translate(x,y);paint.rotate(side*.38);
+      paint.fillStyle='#6b5446';
+      paint.beginPath();paint.ellipse(0,h*.06,h*.030,h*.11,0,0,TAU);paint.fill();
+      paint.fillStyle='#9b7466';
+      paint.beginPath();paint.ellipse(0,0,h*.035,h*.045,0,0,TAU);paint.fill();
+      for(let i=-1;i<=1;i++){
+        paint.beginPath();paint.ellipse(i*h*.017,-h*.029,h*.009,h*.02,0,0,TAU);paint.fill();
+      }
+      paint.restore();
+    }
+  }
   if(time<player.stunUntil){
     const fade=clamp((player.stunUntil-time)/.95,0,1);
     paint.fillStyle='rgba(54,44,63,'+(.30*fade)+')';paint.fillRect(0,0,w,h);
@@ -2278,7 +2357,7 @@ function drawEffects(dt,filmTime) {
     ring.addColorStop(1,'rgba(244,183,98,'+(.27*faded)+')');
     paint.fillStyle=ring;paint.fillRect(0,0,w,h);
   }
-  if(player.y<CAT_SAFE_HEIGHT&&(alertPulse>0||cat.alert>.63)) {
+  if(!shelteredInCabinet()&&player.y<CAT_SAFE_HEIGHT&&(alertPulse>0||cat.alert>.63)) {
     const amount=Math.max(alertPulse,(cat.alert-.63)*.65)*(0.85+Math.sin(filmTime*7.5)*.15);
     const glare=paint.createRadialGradient(w*.5,h*.47,h*.23,w*.5,h*.50,Math.max(w,h)*.62);
     glare.addColorStop(0,'#ed623a00');
@@ -2441,7 +2520,7 @@ function updateCan() {
   if(player.y>=CAT_SAFE_HEIGHT) tell('等猫走向罐头，再下梯。',2.8);
 }
 function startClimbing() {
-  if(time<player.stunUntil)return;
+  if(time<player.stunUntil||world.course?.pushStart!=null||world.course?.slideAt!=null)return;
   if(mode!=='play') return;
   const available=nearbyClimb();
   if(!available) return;
@@ -2488,6 +2567,24 @@ function checkWater() {
   return true;
 }
 function updatePlayer(dt) {
+  const course=world.course;
+  if(course?.pushStart!=null){
+    const progress=1-Math.exp(-dt*15);
+    player.yaw+=angleDiff(player.yaw,-Math.PI/2)*progress;
+    player.pitch*=1-progress;
+    player.amount=0;
+    return false;
+  }
+  if(course?.slideAt!=null){
+    const t=clamp((time-course.slideAt)/.55,0,1);
+    player.x=slideStart.x;
+    player.z=mix(slideStart.z,slideEnd.z,t);
+    player.y=mix(slideStart.y,slideEnd.y,t);
+    player.yaw+=angleDiff(player.yaw,0)*(1-Math.exp(-dt*13));
+    player.pitch=mix(player.pitch,-.20,1-Math.exp(-dt*11));
+    if(t===1){course.slideAt=null;player.ground=true;}
+    return false;
+  }
   if(time<player.stunUntil)return false;
   const wasGrounded=player.ground;
   const low=player.stance||blocks(player.x,player.z,player.y,.355);
@@ -2520,7 +2617,16 @@ function updatePlayer(dt) {
     const dx=(forward*sine+side*cosine)*speed*dt/move;
     const dz=(forward*cosine-side*sine)*speed*dt/move;
     if(!blocks(player.x+dx,player.z,player.y,height)) player.x+=dx;
-    if(!blocks(player.x,player.z+dz,player.y,height)) player.z+=dz;
+    const risingSurface=player.ground?cabinetRampAt(player.x,player.z+dz,player.y):null;
+    const clearance=risingSurface!==null&&Math.abs(risingSurface-player.y)<.10?
+      Math.max(risingSurface,player.y):player.y;
+    if(!blocks(player.x,player.z+dz,clearance,height)) player.z+=dz;
+  }
+  if(course&&forward>0&&player.ground&&Math.abs(player.y-cabinetTop)<.035&&
+      Math.abs(player.x-slideStart.x)<.49&&player.z>=slideStart.z&&player.z<8.18){
+    course.slideAt=time;
+    playTone(146,.27,.06,'triangle',57);
+    return false;
   }
   const ramp=cabinetRampAt(player.x,player.z,player.y);
   if(player.ground&&ramp!==null&&Math.abs(ramp-player.y)<.115){
@@ -2769,7 +2875,8 @@ function updateCat(dt,sprint) {
   const patrol=world.level.patrol;
   const difficulty=catDifficulty[levelIndex];
   if(!world.grid) buildCatGrid();
-  const near=distance(player,cat), hidden=protectedByCover();
+  const sheltered=shelteredInCabinet();
+  const near=distance(player,cat), hidden=sheltered||protectedByCover();
   const front=angleTo(player.x-cat.x,player.z-cat.z);
   const facing=Math.abs(angleDiff(cat.yaw,front));
   const onTrail=cat.phase==='hunt'||cat.phase==='search';
@@ -2848,10 +2955,10 @@ function updateCat(dt,sprint) {
   if((!lunging||cat.lunge?.stage==='dash') && !hidden && distance(player,cat)<reach && player.y<.82 && clearSight(cat,player,.50,player.y+.15)) {
     showModal('caught');return;
   }
-  $('alert').classList.toggle('danger',!aboveCat&&cat.phase==='hunt');
-  $('alert').classList.toggle('searching',!aboveCat&&cat.phase==='search');
+  $('alert').classList.toggle('danger',!sheltered&&!aboveCat&&cat.phase==='hunt');
+  $('alert').classList.toggle('searching',!sheltered&&!aboveCat&&cat.phase==='search');
   const lungeHint={brace:'猫压低了身子，往旁边躲！',dash:'猫扑过来了！',slide:'猫滑出去了',recover:'猫正在站稳'};
-  const status=lungeHint[cat.lunge?.stage]??(distracted?(world.bell?'猫正在找瓶盖':'猫正在查看罐头'):aboveCat?'高处安全 · 猫在下面':cat.phase==='hunt'?'猫正在追你':
+  const status=sheltered?'在柜内 · 猫进不来':lungeHint[cat.lunge?.stage]??(distracted?(world.bell?'猫正在找瓶盖':'猫正在查看罐头'):aboveCat?'高处安全 · 猫在下面':cat.phase==='hunt'?'猫正在追你':
     cat.phase==='search'?(cat.search.stage==='intercept'?'猫绕向推车另一头':cat.search.stage==='guard'?'猫蹲在推车口':cat.search.stage==='listen'?'猫停下听动静':'猫正在搜查附近'):
     hidden?'你藏在阴影里':cat.phase==='investigate'?'猫正在查看动静':'猫没发现你');
   setText('alertText',status);
@@ -3026,11 +3133,13 @@ function updateGoals() {
   if(player.climb) hint=matchMedia('(pointer:coarse)').matches?
     '按住前进键往上爬，后退键往下爬':'按住 W 或 ↑ 往上爬，S 或 ↓ 往下爬';
   else if(climb||can) hint='';
-  else if(world.course&&Math.abs(player.z-3.12)<1.2&&player.x<3.56&&player.x>1.8&&player.y<.1)
-    hint='从柜子左侧的金梯爬进一层。';
+  else if(world.course&&distance(player,cabinetHatch)<2.6&&player.y<.1)
+    hint='钻到柜底，按 F 抓住洞里的梯子。';
+  else if(world.course&&player.y>=cabinetTop-.04&&player.z>7.25&&player.z<8.18&&player.x>3.55)
+    hint='踏上柜顶中央的滑梯，滑到灶台。';
   else if(insideCabinet()&&world.course.door&&player.z>4.50&&player.z<5.64)
     hint='顺着斜板走，到断口按空格跳。';
-  else if(world.course&&player.z>10.75&&player.z<12.2&&player.y>=cabinetTop-.03&&player.y<cabinetTop+.09&&player.x>3.55)
+  else if(world.course&&player.z>10.75&&player.z<12.2&&player.y>=stoveTop-.03&&player.y<stoveTop+.09&&player.x>3.55)
     hint='蹲下钻过金属隧道，出口有梯子。';
   else if(world.course&&player.z>12.55&&player.y>=2.34&&player.y<2.76&&player.x>3.5)
     hint=world.course.turns===3?'锅柄对齐了，沿把手跳上木阶。':'转动倒扣的锅，让把柄朝向左边木阶。';
@@ -3199,7 +3308,7 @@ function look(dx,dy) {
   player.pitch=clamp(player.pitch-dy*.0031,-1.22,1.22);
 }
 function activate(code) {
-  if(time<player.stunUntil)return;
+  if(time<player.stunUntil||world.course?.pushStart!=null||world.course?.slideAt!=null)return;
   if(code==='KeyF') startClimbing();
   if(code==='KeyE') {
     if(pushCan()) return;
@@ -3431,7 +3540,7 @@ function acceptCageWorld(pose,canElapsed,course) {
   }
   if(world.course&&Array.isArray(course)&&course.length===6&&[course[1],...course.slice(3)].every(n=>Number.isFinite(n)&&Math.abs(n)<32)){
     const [door,angle,awake,x,y,z]=course;
-    Object.assign(world.course,{door,angle,wake:awake?0:null});Object.assign(world.course.spider,{x,y,z});
+    Object.assign(world.course,{door,doorAngle:door?.23:0,angle,wake:awake?0:null});Object.assign(world.course.spider,{x,y,z});
   }
   cageWindowTarget=pose;
   if(!cageWindowPose) cageWindowPose=pose.slice();
