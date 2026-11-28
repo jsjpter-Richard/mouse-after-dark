@@ -169,6 +169,26 @@ html[lang=en] #coopLobby{align-items:safe center}
 #denContinue{flex-shrink:0;text-align:center}
 @media(max-width:470px){#denEnding{flex-wrap:wrap;gap:10px}#denContinue{min-height:42px;padding:10px 15px}}
 
+
+#keyhole,#lookUp,#wireCaption{display:none}
+#cageScreen.immersive{overflow:hidden}
+.immersive #cageViewport{position:absolute;inset:0;width:100%;height:100%;border:0;border-radius:0}
+.immersive .cage-panel,.immersive .cage-top,.immersive .cage-layout,.immersive .cage-shell,.immersive .cage-left{display:contents}
+.immersive .cage-top>div:first-child,.immersive .cage-heading,.immersive .cage-side,.immersive .maze-panel{display:none}
+.immersive .cage-actions,.immersive .cage-window-controls,.immersive #cageNotice,.immersive #wireCaption{position:absolute;z-index:3}
+.immersive .cage-actions{top:12px;right:12px}.immersive .cage-window-controls{bottom:14px;left:50%;transform:translateX(-50%);white-space:nowrap}
+.immersive #cageNotice{left:12px;bottom:60px}
+.immersive #wireCaption{display:block;top:14%;left:50%;transform:translateX(-50%);background:#14221de8;padding:7px 13px;border-radius:10px;text-align:center;pointer-events:none}
+.immersive #keyhole{display:grid;place-content:center;gap:8px;position:absolute;z-index:2;right:16%;top:54%;min-width:82px;min-height:88px;padding:9px;border:3px double #e4b968;border-radius:30% 30% 12% 12%;background:linear-gradient(120deg,#af8046,#574124 62%,#8a6538);color:#fff3ce;box-shadow:0 5px 14px #0009}
+#keyhole i{display:block;margin:auto;width:20px;height:29px;background:#221c14;clip-path:polygon(25% 42%,14% 30%,14% 14%,32% 0,68% 0,86% 14%,86% 30%,75% 42%,62% 50%,80% 100%,20% 100%,38% 50%)}
+#keyhole:hover,#keyhole:focus-visible{outline:2px solid #ffd98f}
+.immersive.inspecting .maze-panel{display:block;position:absolute;z-index:4;inset:50% auto auto 50%;transform:translate(-50%,-50%);width:min(88vw,420px);max-height:85%;overflow:auto;background:linear-gradient(140deg,#59452f,#292820);border:3px double #b1935d;padding:16px;border-radius:20px}
+.immersive.inspecting #lookUp{display:block}.immersive.inspecting #keyhole,.immersive.inspecting .maze-foot{display:none}
+.immersive.inspecting #cageViewport{transform:scale(1.08);filter:brightness(.66)}
+.immersive #mazeGrid{touch-action:none;margin:10px auto}
+.immersive .maze-tile:disabled{pointer-events:none}
+.immersive .maze-tile{background:#342d23}.immersive .maze-tile.wall{background:linear-gradient(140deg,#947545,#6d5535)}
+.immersive .maze-tile.mouse:after{width:55%;height:32%;border:solid #f4ddad;border-width:0 0 4px 4px;transform:rotate(-32deg);background:transparent;border-radius:0 0 0 8px}
 </style>
 </head>
 <body>
@@ -274,7 +294,7 @@ html[lang=en] #coopLobby{align-items:safe center}
   </section>
 </div>
 <main id="cageScreen" hidden aria-label="笼内视角">
-  <div class="cage-shell">
+  <div class="cage-shell"><button id="keyhole" type="button"><i aria-hidden="true"></i><span id="keyholeLabel">查看门锁</span></button><span id="wireCaption" role="status"></span>
     <header class="cage-top">
       <div><div class="stamp" id="cageChapter">联机合作 · 笼内</div><h2 id="cageTitle">隔笼暗号</h2></div>
       <div class="cage-actions"><button id="cageAudio" type="button" class="utility" aria-pressed="true">音效 开</button><button id="leaveCage" class="utility">离开联机</button></div>
@@ -288,9 +308,9 @@ html[lang=en] #coopLobby{align-items:safe center}
       </section>
       <section class="cage-panel maze-panel">
         <div class="cage-heading"><h3>笼内迷宫</h3><span id="plates"></span></div>
-        <p id="mazeTask">走到金色踏板上，给笼门机关通电。</p>
+        <button id="lookUp" class="utility" type="button">抬头看队友</button><p id="mazeTask">走到金色踏板上，给笼门机关通电。</p>
         <div id="mazeGrid" class="maze-grid" aria-label="笼内迷宫，可用方向键或点相邻格移动"></div>
-        <div class="maze-foot">方向键 / WASD / 点相邻格 <span><i></i> 机关</span></div>
+        <p id="wireFeedback" role="status"></p><div class="maze-foot">方向键 / WASD / 点相邻格 <span><i></i> 机关</span></div>
       </section>
       </div>
       <div class="cage-side">
@@ -521,6 +541,18 @@ const englishUi={
   "猫扑过来了！": "The cat is pouncing!",
   "猫滑出去了": "The cat skids past",
   "猫正在站稳": "The cat is finding its footing",
+  "查看门锁": "Inspect keyhole",
+  "抬头看队友": "Look up",
+  "☾ 月亮 · 一只爪": "\u263e Moon \u00b7 one paw",
+  "♧ 叶子 · 两只爪": "\u2667 Leaf \u00b7 two paws",
+  "奶酪刻纹": "Cheese engraving",
+  "寻找刻有月亮或叶子的奶酪。": "Find the cheese with a moon or leaf engraving.",
+  "到笼边举爪，告诉队友该走哪条槽。": "Raise a paw or two by the cage to signal the groove.",
+  "等队友找到刻纹奶酪。": "Wait for your partner to find the engraved cheese.",
+  "这条槽没有松动。试试另一边。": "This groove holds fast. Try the other side.",
+  "门闩松开了！等队友钻进墙洞。": "The latch is free! Wait for your partner at the mouse hole.",
+  "点锁孔查看机关 · 一爪月亮，两爪叶子": "Inspect the keyhole \u00b7 One paw for moon, two for leaf",
+  "沿槽拖动铁丝，或点相邻格。跟着队友的暗号选月亮或叶子。": "Drag the wire along the groove or tap adjacent slots. Follow the paw signal to the moon or leaf.",
   "猫正在追你": "The cat is chasing you",
   "猫停下听动静": "The cat stopped to listen",
   "猫正在搜查附近": "The cat is searching nearby",
@@ -2592,7 +2624,7 @@ function updateGoals() {
     if(!food.found && distance(food,player)<.66 && Math.abs(player.y-food.y)<.54) {
       food.found=true;refreshGoal();
       playTone(435,.17,.095,'sine',690);
-      tell(cageRound?'找到「'+cheeseSigns[food.sign].name+'」，排在'+cageStepNames[cageRound.order.indexOf(food.sign)]+'。':'捡到'+food.name+'，获得数字 '+food.digit+'。',2.15);
+      tell(cageRound?.index===0?(cageRound.lightOn?'☾ 月亮 · 一只爪':'♧ 叶子 · 两只爪'):cageRound?'找到「'+cheeseSigns[food.sign].name+'」，排在'+cageStepNames[cageRound.order.indexOf(food.sign)]+'。':'捡到'+food.name+'，获得数字 '+food.digit+'。',2.15);
       cageSnapshot();
     }
   }
@@ -2913,7 +2945,7 @@ function run() {
 }
 // The outside player's device runs the round. The player in the cage receives its visible state.
 const cageMaps = [
-  ['#########','#S#...#X#','#.#.#.#.#','#...#...#','###.###.#','#...#P..#','#.###.#.#','#.......#','#########'],
+  ['#######','#M###L#','#.....#','###.###','###S###','#######'],
   ['###########','#S..#....X#','###.#.###.#','#...#.#P..#','#.###.#.###','#.....#...#','#.#####.#.#','#P......#.#','###########'],
   ['#########','#S....#X#','#.##..#.#','#..P###.#','###.#...#','#...#.P.#','#.###.#.#','#.......#','#########'],
   ['###########','#S..#....X#','###.#.###.#','#...#P....#','#.###.###.#','#....P#...#','#.#####.#.#','#P........#','###########']
@@ -2922,7 +2954,7 @@ const cheeseSigns = [
   {icon:'☾',name:'月亮'},{icon:'♧',name:'叶子'},{icon:'♦',name:'水滴'},{icon:'✦',name:'星星'}
 ];
 const cageStepNames=['最前面','第二个','第三个'];
-const cageSignCount=index=>Math.min(index+2,3);
+const cageSignCount=index=>index===0?1:Math.min(index+2,3);
 let cageRoom=null, cageRound=null, cageGuest=null, cageRun=0, signalRevision=0;
 const cageLatches=[];
 const coopHost=()=>cageRoom?.active && (cageRoom.outside??(cageRoom.role==='host'));
@@ -2945,7 +2977,7 @@ function newCageRound(index) {
   };
 }
 function cageFood(level) {
-  const placement=shuffle(cageRound.order);
+  const placement=cageRound.index===0?[cageRound.lightOn?0:1]:shuffle(cageRound.order);
   return level.food.slice(0,placement.length).map(([x,z,,color,y=0],i)=>({
     x,y,z,name:cheeseSigns[placement[i]].name+'奶酪',color,sign:placement[i],found:false
   }));
@@ -3060,6 +3092,12 @@ function cageHostGoal(missing,open) {
 function cageHostHud() {
   const collected=world.food.filter(food=>food.found);
   const open=world.lock.openedAt!==null;
+  if(cageRound.index===0){
+    const mark=collected.length?(cageRound.lightOn?'☾ 月亮 · 一只爪':'♧ 叶子 · 两只爪'):'？';
+    setText('clueHeading','奶酪刻纹');setText('clueDigits',mark);
+    setText('task',open?'队友已出来。钻进墙洞一起撤离。':collected.length?'到笼边举爪，告诉队友该走哪条槽。':'寻找刻有月亮或叶子的奶酪。');
+    return;
+  }
   setText('task',cageHostGoal(world.food.length-collected.length,open));
   const sequence=cageRound.order.map(sign=>collected.some(food=>food.sign===sign)?cheeseSigns[sign].icon+' '+cheeseSigns[sign].name:'？').join(' → ');
   setText('clueHeading','扣件顺序');
@@ -3076,6 +3114,25 @@ function cageHostHint() {
     cageSnapshot();
   }
   $('coopSignals').hidden=!near;
+  const wireRound=cageRound.index===0;
+  for(const button of $('coopSignalButtons').children){
+    const gesture=button.dataset.kind==='gesture';
+    if(gesture){
+      const count=Number(button.dataset.count);
+      const label=' '+ui(wireRound?(count===1?'☾ 月亮 · 一只爪':'♧ 叶子 · 两只爪'):(count===1?'一爪 · 灯亮':'两爪 · 灯灭'));
+      if(button.lastChild.textContent!==label)button.lastChild.textContent=label;
+    }
+  }
+  if(near && wireRound){
+    const found=world.food.some(food=>food.found);
+    setText('cageLampText',found?(cageRound.lightOn?'☾ 月亮 · 一只爪':'♧ 叶子 · 两只爪'):'寻找刻有月亮或叶子的奶酪。');
+    setText('cageSignOrder','');setText('cageSignalStatus','到笼边举爪，告诉队友该走哪条槽。');
+    for(const b of $('coopSignalButtons').children){
+      b.disabled=!found||time<cageRound.signalUntil||(b.dataset.kind==='voice'&&!world.food.some(f=>f.sign===Number(b.dataset.count)-1));
+      b.classList.toggle('guided-signal',found&&b.dataset.kind==='gesture'&&Number(b.dataset.count)===(cageRound.lightOn?1:2));
+    }
+    return '';
+  }
   if(near) {
     const firstLevel=levelIndex===0;
     const lampPaws=cageRound.lightOn?1:2;
@@ -3113,6 +3170,7 @@ function cageHostHint() {
 }
 function sendCageSignal(kind,count) {
   if(mode!=='play'||!cageSignalNear()||time<cageRound.signalUntil) return;
+  if(cageRound.index===0&&!world.food.some(f=>f.found)) return;
   const sign=kind==='voice'?cheeseSigns[count-1]:null;
   if(kind==='voice'&&(!sign||!world.food.some(food=>food.sign===count-1&&food.found))) return;
   if(!sendRoom({type:'signal',round:cageRound.id,kind,count})) return;
@@ -3121,7 +3179,7 @@ function sendCageSignal(kind,count) {
   if(kind==='gesture') {
     player.stance=false;
     cageRound.pawCount=count;cageRound.pawUntil=time+1.15;
-    tell(count===1?'举一只爪，传出「灯亮」':'举两只爪，传出「灯灭」',1.1);
+    tell(cageRound.index===0?(count===1?'☾ 月亮 · 一只爪':'♧ 叶子 · 两只爪'):count===1?'举一只爪，传出「灯亮」':'举两只爪，传出「灯灭」',1.1);
   } else {
     cageRound.noise={x:player.x,z:player.z,until:time+.9+.22*count};
     pulseSqueaks(count);
@@ -3205,6 +3263,15 @@ function acceptCageMove(message) {
   const next=cageMove(position,message.dx,message.dy,cols,tiles);
   if(next<0 || (tiles[next]==='X'&&world.lock.openedAt===null)) return;
   cageRound.lastMove=now;cageRound.position=next;
+  if(cageRound.index===0 && 'ML'.includes(tiles[next])){
+    const correct=tiles[next]===(cageRound.lightOn?'M':'L');
+    if(correct && world.food.every(f=>f.found)){
+      releaseDenLock();cageRound.escaped=true;playUnlockSound();refreshGoal();
+      $('coopSignals').hidden=true;
+    } else {
+      sendRoom({type:'feedback',round:cageRound.id,text:correct?'等队友找到刻纹奶酪。':'这条槽没有松动。试试另一边。'});
+    }
+  }
   if(tiles[next]==='P'&&!cageRound.plates.has(next)) {
     cageRound.plates.add(next);
     if(cageRound.plates.size===cageRound.totalPlates) tell('队友已给笼门机关通电。',2.0);
@@ -3217,6 +3284,7 @@ function acceptCageMove(message) {
   cageSnapshot();
 }
 function acceptCageGuess(message) {
+  if(cageRound.index===0) return;
   if(mode!=='play'||world.lock.openedAt!==null) return;
   const signs=message.signs, order=cageRound.order;
   let feedback='',problem='';
@@ -3292,7 +3360,7 @@ function receiveCoop(message) {
         cageLatches.length=0;
         renderCageMechanism();
       }
-      setText('cageFeedback',message.text.slice(0,130));
+      setText(cageGuest.index===0?'wireFeedback':'cageFeedback',message.text.slice(0,130));
       playTone(155,.16,.08,'triangle',95);
     }
   }
@@ -3305,7 +3373,7 @@ function buildMaze(index) {
     const cell=document.createElement('button');
     cell.type='button';
     cell.tabIndex=-1;
-    cell.textContent=tile==='P'?'◆':tile==='X'?'↗':'';
+    cell.textContent=tile==='M'?'☾':tile==='L'?'♧':tile==='P'?'◆':tile==='X'?'↗':'';
     cell.setAttribute('aria-hidden','true');
     cell.addEventListener('click',()=>{
       if(!cageGuest) return;
@@ -3363,6 +3431,7 @@ function replaySqueaks(cue) {
 }
 function displayCageSignal(kind,count) {
   if(kind==='gesture'&&(count===1||count===2)){
+    if(cageGuest?.index===0)setText('wireCaption',count===1?'☾ 月亮 · 一只爪':'♧ 叶子 · 两只爪');
     drawSignalMouse(count);
     setText('signalText',count===1?'一只爪 · 把拨杆拨到灯亮':'两只爪 · 把拨杆拨到灯灭');
     if(cageGuest?.index===0&&cageGuest.phase==='play'&&!cageGuest.open){
@@ -3452,6 +3521,8 @@ function updateCageView(state) {
   const contactChanged=newCage||prior.contact!==state.contact||prior.phase!==state.phase||prior.open!==state.open;
   cageGuest=state;
   if(newCage) {
+    $('cageScreen').classList.toggle('immersive',state.index===0);
+    inspectWire(false);
     signalRevision++;
     finishSqueakReplay();
     cageInbox.serial=0;cageInbox.nextReplyAt=0;cageInbox.lampCue=null;
@@ -3494,6 +3565,13 @@ function updateCageView(state) {
       if(cell.disabled===reachable) cell.disabled=!reachable;
     }
   }
+  if(state.index===0){
+    if(justOpened){inspectWire(false);setText('wireCaption','门闩松开了！等队友钻进墙洞。');}
+    if(newCage||state.position!==prior.position && !'ML'.includes(tiles[state.position]))setText('wireFeedback','');
+    if(newCage)setText('wireCaption','点锁孔查看机关 · 一爪月亮，两爪叶子');
+    $('keyhole').disabled=state.phase!=='play'||state.open;
+    setText('mazeTask','沿槽拖动铁丝，或点相邻格。跟着队友的暗号选月亮或叶子。');
+  }
   const active=state.phase==='play'&&!state.open;
   if(contactChanged) {
     $('cageConfirm').disabled=!active||!state.contact;
@@ -3509,6 +3587,7 @@ function updateCageView(state) {
   setText('cageNotice',notice||'');
 }
 function moveFromCage(dx,dy) {
+  if(cageGuest?.index===0&&!$('cageScreen').classList.contains('inspecting')) return;
   if(cageGuest?.phase!=='play'||cageGuest.escaped||Math.abs(dx)+Math.abs(dy)!==1) return;
   sendRoom({type:'move',round:cageGuest.round,dx,dy});
 }
@@ -3696,6 +3775,7 @@ function enterOutsideView(index,swapped=false) {
   tell(swapped?'换位了！这关你在笼外，找到奶酪图案，帮队友开门。':'队友被困在笼子里。按 Q 寻找带图案的奶酪。',3.15);
 }
 function enterCageView(swapped=false) {
+  $('cageScreen').classList.remove('immersive','inspecting');
   cageRoom.outside=false;
   cageRound=null;
   cageGuest=null;
@@ -4184,7 +4264,27 @@ async function pasteCageCode() {
     lobbyMessage('可以按 Ctrl+V 或 ⌘V 粘贴连接码。');
   }
 }
+function inspectWire(open){
+  if(open)cageWindowYaw=0;
+  $('cageScreen').classList.toggle('inspecting',open);
+  if(open)$('lookUp').focus();
+}
 function cageInputs() {
+  const grid=$('mazeGrid');
+  let dragId=null;
+  function traceWire(event){
+    if(dragId!==event.pointerId||cageGuest?.index!==0)return;
+    const cell=document.elementFromPoint(event.clientX,event.clientY);
+    if(cell?.parentNode===grid&&!cell.disabled)cell.click();
+  }
+  grid.addEventListener('pointerdown',event=>{
+    if(cageGuest?.index!==0)return;
+    dragId=event.pointerId;grid.setPointerCapture(dragId);traceWire(event);
+  });
+  grid.addEventListener('pointermove',traceWire);
+  grid.addEventListener('lostpointercapture',()=>{dragId=null;});
+  $('keyhole').onclick=()=>inspectWire(true);
+  $('lookUp').onclick=()=>{inspectWire(false);$('keyhole').focus();};
   const events={openCoop:openCageLobby,closeLobby:closeCageLobby,
     hostRoom:()=>openShortRoom('host',newRoomCode()),joinRoom:enterShortRoomCode,
     hostManual:hostCageRoom,joinManual:joinCageRoom,copyShortRoom:copyShortRoomCode,copyLanInvite,
