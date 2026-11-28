@@ -517,6 +517,10 @@ const englishUi={
   "墙洞": "Mouse Hole",
   "头顶太低，离开矮缝后会自动站起来。": "Low ceiling. You’ll stand up when you clear the gap.",
   "猫发现你了！找柜底或拐角。": "The cat saw you! Get under a cabinet or around a corner.",
+  "猫压低了身子，往旁边躲！": "The cat crouches. Dodge sideways!",
+  "猫扑过来了！": "The cat is pouncing!",
+  "猫滑出去了": "The cat skids past",
+  "猫正在站稳": "The cat is finding its footing",
   "猫正在追你": "The cat is chasing you",
   "猫停下听动静": "The cat stopped to listen",
   "猫正在搜查附近": "The cat is searching nearby",
@@ -1631,7 +1635,7 @@ function createLevel(index) {
   cat={
     x:cx,z:cz,yaw:angleTo(nx-cx,nz-cz),alert:0,goal:1,phase:'patrol',
     memory:0,last:null,seesPlayer:false,lastDirection:null,search:null,distraction:null,
-    trail:[],repath:0,gait:0,speed:0,stepDistance:0,patrolStall:0
+    lunge:null,lungeReady:0,trail:[],repath:0,gait:0,speed:0,stepDistance:0,patrolStall:0
   };
   setupCat();
   time=0;sniffUntil=0;readyAt=0;toastUntil=0;alertPulse=0;footstep=0;
@@ -1726,7 +1730,7 @@ function draw(item) {
 function drawCat(actor, animationTime) {
   const cosine=Math.cos(actor.yaw), sine=Math.sin(actor.yaw);
   const bob=Math.sin(actor.gait*2)*.025*Math.min(actor.speed,1);
-  const prowl=actor.search?.stage==='guard'?.29:actor.phase==='hunt'?.12:0;
+  const prowl=actor.lunge?.stage==='brace'?.32:actor.lunge?.stage==='slide'?.24:actor.search?.stage==='guard'?.29:actor.phase==='hunt'?.12:0;
   for(const part of catShapes) {
     const stride=part.gaitSign ? Math.sin(actor.gait)*part.gaitSign*Math.min(actor.speed*.13,.25) : 0;
     const tail=part.tail ? Math.sin(animationTime*2.6-part.tail*2)*part.tail*.36 : 0;
@@ -1860,7 +1864,7 @@ function render(dt, filmTime) {
   const denGlow=!home||inside?0:inCage?Number(Boolean(cageGuest.open)):
     world.lock.openedAt===null?0:clamp((time-world.lock.openedAt)/.48,0,1);
   const actor=inCage&&cageWindowPose?
-    {x:cageWindowPose[7],z:cageWindowPose[8],yaw:cageWindowPose[9],gait:cageWindowPose[10],speed:cageWindowPose[11],phase:cageWindowPose[12]?'hunt':'patrol'}:
+    {x:cageWindowPose[7],z:cageWindowPose[8],yaw:cageWindowPose[9],gait:cageWindowPose[10],speed:cageWindowPose[11],lunge:{stage:['','','brace','dash','slide','recover'][cageWindowPose[12]]},phase:cageWindowPose[12]?'hunt':'patrol'}:
     mode==='menu'?{x:3.3+Math.sin(filmTime*.63)*.5,z:5.6,yaw:-2.63,gait:filmTime*1.5,speed:.5,phase:'patrol'}:cat;
   if(software) softwareStart(level,actor,fog,denGlow);
   else {
@@ -2325,6 +2329,38 @@ function followCanNoise(visible) {
   cat.last=distraction.target;
   return true;
 }
+// Commit to the sighting at takeoff preparation, so a sideways dodge really works.
+function kitchenLunge(dt,visible,near,front,facing){
+  if(world.level.scene!=='kitchen') return false;
+  if(!cat.lunge){
+    if(cat.phase!=='hunt'||!visible||time<cat.lungeReady||near<1.15||near>3.25||facing>.47) return false;
+    cat.lunge={stage:'brace',until:time+.72,heading:front};
+    cat.yaw=front;
+    cat.trail=[];cat.repath=0;
+    playTone(112,.13,.09,'triangle',67);
+  }
+  const move=cat.lunge;
+  if(move.stage==='brace' && time>=move.until){
+    move.stage='dash';move.until=time+.39;
+  }
+  if(move.stage==='dash' && time>=move.until){
+    move.stage='slide';move.until=time+.48;
+  }
+  if(move.stage==='recover'){
+    if(time>=move.until){cat.lunge=null;cat.lungeReady=time+3.8;cat.repath=0;}
+    return true;
+  }
+  if(move.stage==='brace') return true;
+  const speed=move.stage==='dash'?6.6:3.8*clamp((move.until-time)/.48,0,1);
+  const stride=speed*dt;
+  const x=cat.x+Math.sin(move.heading)*stride,z=cat.z+Math.cos(move.heading)*stride;
+  if(speed<.08||blocks(x,z,.10,1.04,.47)){
+    move.stage='recover';move.until=time+.62;
+    return true;
+  }
+  cat.x=x;cat.z=z;cat.speed=speed;cat.gait+=stride*2;
+  return true;
+}
 function updateCat(dt,sprint) {
   const patrol=world.level.patrol;
   const difficulty=catDifficulty[levelIndex];
@@ -2384,8 +2420,9 @@ function updateCat(dt,sprint) {
     }
   }
   cat.speed=0;
-  if(cat.phase==='search') updateCatSearch(dt,difficulty);
-  else {
+  const lunging=kitchenLunge(dt,visible,near,front,facing);
+  if(!lunging && cat.phase==='search') updateCatSearch(dt,difficulty);
+  else if(!lunging){
     let target=cat.last;
     if(cat.phase==='patrol'){
       target=point(...patrol[cat.goal]);
@@ -2404,14 +2441,15 @@ function updateCat(dt,sprint) {
   }
   const canPounce=world.level.pounceReach && cat.phase==='hunt' && visible && Math.abs(angleDiff(cat.yaw,front))<.85;
   const reach=canPounce?world.level.pounceReach:.73;
-  if(!hidden && distance(player,cat)<reach && player.y<.82 && clearSight(cat,player,.50,player.y+.15)) {
+  if((!lunging||cat.lunge?.stage==='dash') && !hidden && distance(player,cat)<reach && player.y<.82 && clearSight(cat,player,.50,player.y+.15)) {
     showModal('caught');return;
   }
   $('alert').classList.toggle('danger',!aboveCat&&cat.phase==='hunt');
   $('alert').classList.toggle('searching',!aboveCat&&cat.phase==='search');
-  const status=distracted?'猫正在查看罐头':aboveCat?'高处安全 · 猫在下面':cat.phase==='hunt'?'猫正在追你':
+  const lungeHint={brace:'猫压低了身子，往旁边躲！',dash:'猫扑过来了！',slide:'猫滑出去了',recover:'猫正在站稳'};
+  const status=lungeHint[cat.lunge?.stage]??(distracted?'猫正在查看罐头':aboveCat?'高处安全 · 猫在下面':cat.phase==='hunt'?'猫正在追你':
     cat.phase==='search'?(cat.search.stage==='intercept'?'猫绕向推车另一头':cat.search.stage==='guard'?'猫蹲在推车口':cat.search.stage==='listen'?'猫停下听动静':'猫正在搜查附近'):
-    hidden?'你藏在阴影里':cat.phase==='investigate'?'猫正在查看动静':'猫没发现你';
+    hidden?'你藏在阴影里':cat.phase==='investigate'?'猫正在查看动静':'猫没发现你');
   setText('alertText',status);
   $('alertFill').style.transform='scaleX('+cat.alert.toFixed(2)+')';
 }
@@ -2939,7 +2977,7 @@ function sendCageWorld(now) {
   cageRound.nextViewAt=now+110;
   const paw=time<cageRound.pawUntil?cageRound.pawCount:0;
   const pose=[player.x,player.y,player.z,player.yaw%TAU,player.eye,player.gait%TAU,paw,
-    cat.x,cat.z,cat.yaw%TAU,cat.gait%TAU,cat.speed,cat.phase==='hunt'?1:0];
+    cat.x,cat.z,cat.yaw%TAU,cat.gait%TAU,cat.speed,cat.lunge?({brace:2,dash:3,slide:4,recover:5})[cat.lunge.stage]:cat.phase==='hunt'?1:0];
   const pushedAt=world.can?.pushedAt;
   const can=pushedAt==null?undefined:Math.min(CAN_SETTLED,Math.round((time-pushedAt)*100)/100);
   sendRoom({type:'view',round:cageRound.id,pose:pose.map(value=>Math.round(value*100)/100),can});
