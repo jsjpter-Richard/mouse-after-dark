@@ -957,6 +957,7 @@ function initGL() {
     uniform vec3 uFog;
     uniform vec3 uCat;
     uniform vec3 uDenGlow;
+    uniform vec2 uCabinetLight;
     uniform vec2 uRoom;
     uniform sampler2D uShade;
     uniform float uEmissive;
@@ -1024,7 +1025,19 @@ function initGL() {
       }
       float depth=distance(vPosition,uEye);
       float haze=clamp(1.0-exp(-depth*depth*0.00155),0.0,0.66);
-      gl_FragColor=vec4(mix(base,uFog,haze*(1.0-0.45*uEmissive)),1.0);
+      vec3 sceneColor=mix(base,uFog,haze*(1.0-0.45*uEmissive));
+      if(uCabinetLight.x>0.0){
+        float adapted=.018+.63*(1.0-smoothstep(.46,1.48,depth));
+        float fromCrack=p.x-3.64;
+        float beamWidth=.075+max(0.0,fromCrack)*.20;
+        float slit=1.0-smoothstep(.16,1.0,abs(p.z-4.83)/beamWidth);
+        float beam=uCabinetLight.y*step(-.06,fromCrack)*slit*
+          (1.0-smoothstep(.14,1.37,fromCrack))*(1.0-smoothstep(1.25,1.78,p.y));
+        float eyeGlow=step(3.5,uMaterial);
+        vec3 cabinetColor=sceneColor*(adapted+beam*vec3(.91,.67,.41));
+        sceneColor=mix(sceneColor,mix(cabinetColor,uColor,eyeGlow*.80),uCabinetLight.x);
+      }
+      gl_FragColor=vec4(sceneColor,1.0);
     }`);
   const program=gl.createProgram();
   gl.attachShader(program,vertex);
@@ -1033,7 +1046,7 @@ function initGL() {
   if (!gl.getProgramParameter(program,gl.LINK_STATUS)) throw Error(gl.getProgramInfoLog(program));
   gl.useProgram(program);
   const uniforms={};
-  for (const name of ['Model','View','Scale','Color','Eye','Lamp','Fog','Room','Cat','Emissive','Material','DenGlow']) {
+  for (const name of ['Model','View','Scale','Color','Eye','Lamp','Fog','Room','Cat','Emissive','Material','DenGlow','CabinetLight']) {
     uniforms[name]=gl.getUniformLocation(program,'u'+name);
   }
   shader={...uniforms,position:gl.getAttribLocation(program,'aPosition'),normal:gl.getAttribLocation(program,'aNormal')};
@@ -1574,7 +1587,14 @@ function buildStoveCourse(){
   for(const ramp of cabinetRamps){
     const rise=ramp.y1-ramp.y0, run=ramp.z1-ramp.z0;
     const pitch=-Math.atan2(rise,run), z=(ramp.z0+ramp.z1)/2;
-    box('b59570',ramp.x,(ramp.y0+ramp.y1)/2-.055,z,1.24,.11,Math.hypot(run,rise),{material:2,pitch});
+    const length=Math.hypot(run,rise), middleY=(ramp.y0+ramp.y1)/2;
+    for(let plank=-1;plank<=1;plank++){
+      box(plank===0?'ae8056':'a27957',ramp.x+plank*.416,middleY-.055,z,.408,.11,length,{material:2,pitch});
+    }
+    for(const side of [-1,1]){
+      box('825a3b',ramp.x+side*.615,middleY+.012,z,.042,.055,length,{material:2,pitch});
+      place('sphere','8e774e',ramp.x+side*.50,ramp.y1-.024,ramp.z1-.082,.034,.012,.034);
+    }
     box('e7bd79',ramp.x,ramp.y1-.018,ramp.z1-.045,1.16,.029,.082,{glow:.16});
   }
   box('b59570',lane,.945,5.085,1.24,.11,.09,wood);
@@ -1610,6 +1630,11 @@ function buildStoveCourse(){
     box(x===lane?'839e96':'d1a466',x,(slideStart.y+slideEnd.y)/2+h,(slideStart.z+slideEnd.z)/2,w,.11,length,{pitch,material:2});
   }
   solid('758281',lane,stoveTop-.09,9.93,2.65,.18,4.03);
+  box('979f96',lane,stoveTop-.19,7.94,2.64,.21,.08);
+  for(const x of [4.03,4.40,5.30,5.67]){
+    place('tube','495653',x,stoveTop-.19,7.87,.18,.055,.18,{pitch:Math.PI*.5});
+    box('b8b79f',x,stoveTop-.155,7.834,.028,.067,.012);
+  }
   for(const x of [3.88,5.82])solid('636e70',x,stoveTop+.23,11.68,.12,.46,1.0);
   solid('88928a',lane,stoveTop+.31,11.57,2.05,.10,.82,{cover:true});
   solid('758281',lane,stoveTop-.07,12.20,2.04,.14,.74);
@@ -1699,7 +1724,7 @@ function updateStoveCourse(dt,sprint){
     if(elapsed>=.44)c.pushStart=null;
   }
   const onFirstFloor=insideCabinet();
-  c.darkness=mix(c.darkness,onFirstFloor?(c.door?.22:.78):0,1-Math.exp(-dt*15));
+  c.darkness=mix(c.darkness,onFirstFloor?1:0,1-Math.exp(-dt*15));
   if(onFirstFloor){
     if(!c.entered){
       c.entered=true;
@@ -1725,12 +1750,16 @@ function updateStoveCourse(dt,sprint){
 function drawStoveCourse(t){
   const c=world.course;if(!c)return;
   const piece=(type,col,x,y,z,w,h,d,opts)=>draw(element(type,col,x,y,z,w,h,d,opts));
-  const doorX=3.66-Math.sin(c.doorAngle)*.68;
-  piece('box','785740',doorX,1.22,4.17,.11,1.12,1.42,{yaw:c.doorAngle,material:2});
-  piece('box','d3ae73',doorX+.07,.94,4.52,.066,.06,.27,{glow:.26});
-  if(c.door){
-    piece('box','ffe2a0',3.68,1.12,4.66,.035,.83,.07,{glow:1});
-    for(let i=0;i<7;i++)piece('box','d6a366',3.76+i*.21,cabinetFirst+.009,4.66-i*.07,.225,.016,.10+i*.035,{glow:.48-i*.045});
+  const sine=Math.sin(c.doorAngle),cosine=Math.cos(c.doorAngle),hinge=3.46;
+  const onDoor=(type,color,offset,y,along,w,h,d,options)=>piece(type,color,
+    3.66+offset*cosine-along*sine,y,hinge+along*cosine+offset*sine,w,h,d,
+    {...options,yaw:-c.doorAngle});
+  onDoor('box','785740',0,1.22,.71,.11,1.12,1.42,{material:2});
+  for(const along of [.12,1.28])onDoor('box','977253',.06,1.22,along,.03,1.01,.08,{material:2});
+  for(const y of [.76,1.67])onDoor('box','977253',.06,y,.71,.03,.065,1.28,{material:2});
+  onDoor('box','c8a46d',.076,.94,1.14,.065,.055,.21,{glow:.20});
+  if(c.doorAngle>.025){
+    piece('box','edc795',3.645,1.20,4.83,.018,.93,.045,{glow:.78});
   }
   const sp=c.spider;
   if(c.wake!==null){
@@ -1740,7 +1769,10 @@ function drawStoveCourse(t){
       for(const side of [-1,1])for(let j=0;j<4;j++)
         piece('box','704744',sp.x+side*.15,sp.y-.034,sp.z+(j-1.5)*.073,.22,.028,.032,{roll:side*(.35+.19*Math.sin(t*9+j)),yaw:side*(j-1.5)*.32});
     }
-    for(const side of [-1,1])piece('sphere','ff3028',sp.x+side*.049,sp.y+.026,sp.z-.142,.04,.044,.04,{glow:1});
+    const face=angleTo(player.x-sp.x,player.z-sp.z);
+    for(const side of [-1,1])piece('sphere','f83428',
+      sp.x+Math.sin(face)*.15+Math.cos(face)*side*.047,sp.y+.032,
+      sp.z+Math.cos(face)*.15-Math.sin(face)*side*.047,.034,.038,.034,{glow:.9,material:4});
   }
   for(const h of stoveDangers){
     if(h.fire){
@@ -1821,6 +1853,42 @@ function softwareStart(level,actor,fog,denGlow) {
   software.level=level;
   software.actor=actor;
   software.denGlow=denGlow;
+}
+function shadeSoftwareCabinet(fade,crack){
+  const {width,height,depth,frame}=software;
+  const [ex,ey,ez]=view.position;
+  const {right,up,forward,sx,sy}=view;
+  const rgba=frame.data;
+  const smooth=(lo,hi,value)=>{
+    const t=clamp((value-lo)/(hi-lo),0,1);
+    return t*t*(3-2*t);
+  };
+  for(let y=0,i=0;y<height;y++){
+    const ny=(1-(y+.5)*2/height)/sy;
+    for(let x=0;x<width;x++,i++){
+      const dz=depth[i]>0?1/depth[i]:64;
+      const nx=((x+.5)*2/width-1)/sx;
+      const j=i*4;
+      // Red emissive eyes are the only strongly saturated red in the cabinet.
+      if(rgba[j]>155&&rgba[j]>rgba[j+1]*3.8&&rgba[j]>rgba[j+2]*4.8)continue;
+      const distance=dz*Math.sqrt(1+nx*nx+ny*ny);
+      const adapted=.018+.63*(1-smooth(.46,1.48,distance));
+      let beam=0;
+      if(crack>0&&depth[i]>0){
+        const wx=ex+dz*(forward[0]+right[0]*nx+up[0]*ny);
+        const fromCrack=wx-3.64;
+        if(fromCrack>=-.06&&fromCrack<1.37){
+          const wy=ey+dz*(forward[1]+up[1]*ny);
+          const wz=ez+dz*(forward[2]+right[2]*nx+up[2]*ny);
+          beam=crack*(1-smooth(.16,1,Math.abs(wz-4.83)/(.075+Math.max(0,fromCrack)*.20)))*
+            (1-smooth(.14,1.37,fromCrack))*(1-smooth(1.25,1.78,wy));
+        }
+      }
+      rgba[j]*=mix(1,adapted+beam*.91,fade);
+      rgba[j+1]*=mix(1,adapted+beam*.67,fade);
+      rgba[j+2]*=mix(1,adapted+beam*.41,fade);
+    }
+  }
 }
 function clipNear(vertices) {
   const clipped=[];
@@ -2244,14 +2312,15 @@ function render(dt, filmTime) {
   const actor=inCage&&cageWindowPose?
     {x:cageWindowPose[7],z:cageWindowPose[8],yaw:cageWindowPose[9],gait:cageWindowPose[10],speed:cageWindowPose[11],lunge:{stage:['','','brace','dash','slide','recover'][cageWindowPose[12]]},phase:cageWindowPose[12]?'hunt':'patrol'}:
     mode==='menu'?{x:3.3+Math.sin(filmTime*.63)*.5,z:5.6,yaw:-2.63,gait:filmTime*1.5,speed:.5,phase:'patrol'}:cat;
-  const cabinetLamp=!inCage&&insideCabinet()?
-    (world.course.door?[3.77,1.36,4.42]:[player.x,player.y+.46,player.z]):null;
-  if(software) softwareStart(cabinetLamp?{...level,light:cabinetLamp}:level,actor,fog,denGlow);
+  const cabinetFade=inCage?0:world.course?.darkness||0;
+  const crack=cabinetFade>.006?clamp(world.course.doorAngle/.23,0,1):0;
+  if(software) softwareStart(level,actor,fog,denGlow);
   else {
     gl.clearColor(...fog,1);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);
     gl.uniformMatrix4fv(shader.View,false,view.matrix);
     gl.uniform3fv(shader.Eye,view.position);
-    gl.uniform3fv(shader.Lamp,cabinetLamp||level.light);
+    gl.uniform3fv(shader.Lamp,level.light);
+    gl.uniform2f(shader.CabinetLight,cabinetFade,crack);
     gl.uniform3fv(shader.Fog,fog);
     gl.uniform2f(shader.Room,level.width/2,level.depth);
     gl.uniform3f(shader.Cat,actor.x,actor.z,1);
@@ -2281,7 +2350,10 @@ function render(dt, filmTime) {
     for(const food of world.food) drawFood(food);
   }
   drawCat(actor,inCage||mode==='menu'?filmTime:time);
-  if(software) software.context.putImageData(software.frame,0,0);
+  if(software){
+    if(cabinetFade>.006)shadeSoftwareCabinet(cabinetFade,crack);
+    software.context.putImageData(software.frame,0,0);
+  }
   if(!inCage&&!arriving) drawEffects(dt,filmTime);
   if(mode==='play') updateMarkers();
 }
@@ -2292,44 +2364,10 @@ function drawEffects(dt,filmTime) {
   paint.clearRect(0,0,w,h);
   if(mode==='menu') return;
   const course=world.course;
-  if(course?.darkness>.015){
-    const sight=paint.createRadialGradient(w*.50,h*.49,h*.13,w*.50,h*.49,Math.max(w,h)*.58);
-    sight.addColorStop(0,'rgba(12,8,5,'+course.darkness*.30+')');
-    sight.addColorStop(.50,'rgba(9,6,4,'+course.darkness*.65+')');
-    sight.addColorStop(1,'rgba(3,2,2,'+course.darkness+')');
-    paint.fillStyle=sight;
-    paint.fillRect(0,0,w,h);
-    if(insideCabinet()&&!course.door){
-      const dx=cabinetDoor.x-view.position[0],dy=.95-view.position[1],dz=4.48-view.position[2];
-      const along=axis=>dx*axis[0]+dy*axis[1]+dz*axis[2];
-      const depth=along(view.forward);
-      if(depth>.18){
-        const x=w*(.5+along(view.right)*view.sx/(2*depth));
-        const y=h*(.5-along(view.up)*view.sy/(2*depth));
-        paint.fillStyle='rgba(198,149,86,.25)';
-        paint.fillRect(x-3,y-1,6,2);
-      }
-    }
-    const age=time-course.wake;
-    if(insideCabinet()&&course.wake!==null&&age<1.32){
-      const sp=course.spider,dx=sp.x-view.position[0],dy=sp.y-view.position[1],dz=sp.z-view.position[2];
-      const along=axis=>dx*axis[0]+dy*axis[1]+dz*axis[2];
-      const depth=along(view.forward);
-      if(depth>.12){
-        const x=w*(.5+along(view.right)*view.sx/(2*depth));
-        const y=h*(.5-along(view.up)*view.sy/(2*depth));
-        const size=clamp(h*.009/depth,1.8,6);
-        paint.fillStyle='#ff453b';
-        for(const side of [-1,1]){
-          paint.beginPath();paint.arc(x+side*size*2.1,y,size,0,TAU);paint.fill();
-        }
-      }
-    }
-  }
   if(course?.pushStart!=null){
     const extend=Math.sin(Math.PI*clamp((time-course.pushStart)/.44,0,1));
     for(const side of [-1,1]){
-      const x=w*(.5+side*(.22-.11*extend)), y=h*(1.02-.46*extend);
+      const x=w*(.5+side*(.16-.07*extend)), y=h*(1.08-.35*extend);
       paint.save();paint.translate(x,y);paint.rotate(side*.38);
       paint.fillStyle='#6b5446';
       paint.beginPath();paint.ellipse(0,h*.06,h*.030,h*.11,0,0,TAU);paint.fill();
