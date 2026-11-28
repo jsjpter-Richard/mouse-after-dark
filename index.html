@@ -507,6 +507,8 @@ const englishUi={
   "奶酪": "Cheese",
   "饼干屑": "Cookie Crumb",
   "储藏室的窄路": "The Narrow Pantry",
+  "猫绕向推车另一头": "The cat is circling the trolley",
+  "猫蹲在推车口": "The cat is waiting at the opening",
   "找到坚果上的数字。推车下有条近路。": "Find the digits on the nuts. There’s a shortcut under the trolley.",
   "榛果": "Hazelnut",
   "核桃": "Walnut",
@@ -1240,6 +1242,11 @@ function pantry() {
     }
   }
   narrowPass(-.55,11.55,5.7,2.35,'816647');
+  // A striped runner hangs along the closed sides, leaving both ends open.
+  for(const x of [-3.39,2.29]){
+    box('637e77',x,.43,11.55,.04,.67,2.35);
+    for(const z of [10.54,10.65,12.45,12.56]) box('dac298',x,.43,z,.052,.67,.042);
+  }
   for(const xx of [-2.96,1.8]) for(const zz of [10.63,12.48]) {
     place('tube','3e4440',xx,.147,zz,.29,.36,.36,{roll:1.57});
   }
@@ -1719,7 +1726,7 @@ function draw(item) {
 function drawCat(actor, animationTime) {
   const cosine=Math.cos(actor.yaw), sine=Math.sin(actor.yaw);
   const bob=Math.sin(actor.gait*2)*.025*Math.min(actor.speed,1);
-  const prowl=actor.phase==='hunt'?.12:0;
+  const prowl=actor.search?.stage==='guard'?.29:actor.phase==='hunt'?.12:0;
   for(const part of catShapes) {
     const stride=part.gaitSign ? Math.sin(actor.gait)*part.gaitSign*Math.min(actor.speed*.13,.25) : 0;
     const tail=part.tail ? Math.sin(animationTime*2.6-part.tail*2)*part.tail*.36 : 0;
@@ -2219,6 +2226,17 @@ function startCatSearch() {
   const heading=cat.lastDirection??angleTo(cat.last.x-cat.x,cat.last.z-cat.z);
   const approach=catCanWalkTo(cat.last)?cat.last:pathBetween(cat,cat.last).at(-1)??point(cat.x,cat.z);
   cat.phase='search';
+  if(world.level.scene==='pantry' && cat.lastDirection!=null && cat.last.x>-3.4 && cat.last.x<2.3){
+    // Use the last visible approach to an open end. Hidden movement is private.
+    const direction=Math.cos(heading);
+    const entry=direction>0?10.375:12.725;
+    if(Math.abs(direction)>.4 && Math.abs(cat.last.z-entry)<1.1){
+      cat.search={stage:'intercept',target:point(clamp(cat.last.x,-2.8,1.7),direction>0?13.55:9.55),
+        heading:direction>0?Math.PI:0,until:time+6};
+      cat.repath=0;
+      return;
+    }
+  }
   cat.search={stage:'approach',target:approach,heading,until:time+3.2,yaw:cat.yaw,checks:0,origin:null};
 }
 function catSearchTarget(search,difficulty) {
@@ -2243,6 +2261,23 @@ function catSearchTarget(search,difficulty) {
 function updateCatSearch(dt,difficulty) {
   const search=cat.search;
   const searchSpeed=difficulty.investigateSpeed+.05;
+  if(search.stage==='intercept'){
+    if(distance(cat,search.target)<.30){
+      search.stage='guard';
+      search.until=time+1.6;
+    } else if(time<search.until){
+      navigateCat(search.target,dt,difficulty.chaseSpeed*.85);
+      return;
+    } else search.stage='done';
+  }
+  if(search.stage==='guard'){
+    cat.yaw+=clamp(angleDiff(cat.yaw,search.heading),-dt*6,dt*6);
+    if(time<search.until) return;
+    search.stage='done';
+  }
+  if(search.stage==='done'){
+    cat.phase='patrol';cat.search=null;cat.repath=0;return;
+  }
   if(search.stage==='approach'){
     if(time<search.until && distance(cat,search.target)>.27){
       navigateCat(search.target,dt,searchSpeed+.79);return;
@@ -2375,7 +2410,7 @@ function updateCat(dt,sprint) {
   $('alert').classList.toggle('danger',!aboveCat&&cat.phase==='hunt');
   $('alert').classList.toggle('searching',!aboveCat&&cat.phase==='search');
   const status=distracted?'猫正在查看罐头':aboveCat?'高处安全 · 猫在下面':cat.phase==='hunt'?'猫正在追你':
-    cat.phase==='search'?(cat.search.stage==='listen'?'猫停下听动静':'猫正在搜查附近'):
+    cat.phase==='search'?(cat.search.stage==='intercept'?'猫绕向推车另一头':cat.search.stage==='guard'?'猫蹲在推车口':cat.search.stage==='listen'?'猫停下听动静':'猫正在搜查附近'):
     hidden?'你藏在阴影里':cat.phase==='investigate'?'猫正在查看动静':'猫没发现你';
   setText('alertText',status);
   $('alertFill').style.transform='scaleX('+cat.alert.toFixed(2)+')';
