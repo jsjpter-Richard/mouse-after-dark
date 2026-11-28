@@ -935,6 +935,7 @@ function initGL() {
     uniform vec3 uCat;
     uniform vec3 uDenGlow;
     uniform vec2 uRoom;
+    uniform sampler2D uShade;
     uniform float uEmissive;
     uniform float uMaterial;
     varying vec3 vPosition;
@@ -976,18 +977,28 @@ function initGL() {
         texture*=mix(0.42,0.86+0.27*hash(vec3(floor(tile),1.0)),joints);
         texture*=0.93+0.2*noise(p*2.3);
       } else if (uMaterial>=1.5 && uMaterial<2.5) {
-        texture*=0.88+0.23*noise(vec3(p.x*2.0,p.y*29.0,p.z*12.0));
+        float across=abs(normal.x)>.65?p.y*.8+p.z*.22:p.y*.8+p.z;
+        float bend=noise(p*.85);
+        float grain=.5+.5*sin(across*34.0+5.0*bend+1.4*sin(p.x*1.8));
+        texture*=.83+.18*bend+.14*grain*grain;
+        light+=vec3(.09,.047,.014)*grain*key;
       } else if (uMaterial>=2.5 && uMaterial<3.5) {
         float threads=sin(p.x*82.0)*sin(p.z*79.0);
         float stripe=smoothstep(0.38,0.65,abs(sin(p.x*11.0)));
         texture*=0.79+0.09*threads+0.20*stripe;
       }
       if (normal.y>0.6 && p.y<0.12) {
+        vec2 uv=p.xz/vec2(uRoom.x*2.0,uRoom.y)+vec2(.5,0.);
+        texture*=texture2D(uShade,uv).r;
         vec2 border=vec2(uRoom.x-abs(p.x),min(p.z,uRoom.y-p.z));
         texture*=mix(0.48,1.0,smoothstep(0.0,1.2,min(border.x,border.y)));
         if(uCat.z>0.0){float s=length((p.xz-uCat.xy)*vec2(1.15,0.8)); texture*=mix(0.47,1.0,smoothstep(0.1,1.05,s));}
       }
       vec3 base=mix(light*uColor*texture,uColor,uEmissive);
+      if(uMaterial>.5 && uMaterial<1.5){
+        vec3 halfDir=normalize(normalize(delta)+normalize(uEye-p));
+        base+=vec3(.22,.16,.095)*wash*pow(max(dot(normal,halfDir),0.),18.);
+      }
       float depth=distance(vPosition,uEye);
       float haze=clamp(1.0-exp(-depth*depth*0.00155),0.0,0.66);
       gl_FragColor=vec4(mix(base,uFog,haze*(1.0-0.45*uEmissive)),1.0);
@@ -1006,10 +1017,21 @@ function initGL() {
   gl.enable(gl.DEPTH_TEST);
   gl.enableVertexAttribArray(shader.position);
   gl.enableVertexAttribArray(shader.normal);
-  meshes={box:upload(boxVertices()), sphere:upload(roundVertices(12,7)), tube:upload(tubeVertices(14,1)), cone:upload(tubeVertices(12,0)), drum:upload(tubeVertices(12,.79))};
+  meshes={cheese:upload(cheeseVertices()),box:upload(boxVertices()), sphere:upload(roundVertices(12,7)), tube:upload(tubeVertices(14,1)), cone:upload(tubeVertices(12,0)), drum:upload(tubeVertices(12,.79))};
 }
 function vertexData(target,position,normal) {
   target.push(...position,...normal);
+}
+function cheeseVertices(){
+  const vertices=[],rim=[[-.50,-.44],[.50,-.44],[.46,-.17],[.32,.15],[.09,.40],[-.12,.50]];
+  for(let i=0;i<rim.length;i++){
+    const a=rim[i],b=rim[(i+1)%rim.length],dx=b[0]-a[0],dz=b[1]-a[1],len=Math.hypot(dx,dz);
+    for(const [v,y] of [[a,-.5],[a,.5],[b,.5],[a,-.5],[b,.5],[b,-.5]])
+      vertexData(vertices,[v[0],y,v[1]],[dz/len,0,-dx/len]);
+    if(i>0&&i<rim.length-1)for(const y of [-.5,.5])
+      for(const v of [rim[0],a,b])vertexData(vertices,[v[0],y,v[1]],[0,Math.sign(y),0]);
+  }
+  return vertices;
 }
 function boxVertices() {
   const vertices=[];
@@ -1303,6 +1325,12 @@ function pantry() {
     solid('bd925f',x,1.51,17.48,2.40,.14,1.66,{material:2,cover:true});
     solid('72513d',x,.76,18.21,1.7,1.52,.12,{material:2});
     box('d8ae72',x,.97,15.355,.48,.07,.08);
+    // Pale tooth marks and exposed end grain follow the cut edge of the crawlspace.
+    box('d29b66',x,.246,15.367,1.59,.026,.035,{material:2});
+    for(let i=0;i<7;i++){
+      const h=.054+.028*Math.sin(i*2.4);
+      box('efc183',x-.54+i*.17,.247+h*.5,15.364,.022,h,.019,{roll:.35,glow:.12});
+    }
     climbRail(x,16.65,0,1.58);
     const nut=world.food.find(food=>food.name==='松子');
     if(nut)Object.assign(nut,{x:x+.45,y:1.58,z:17.83});
@@ -1480,7 +1508,7 @@ function initSoftware() {
   if(!context) throw Error('Canvas unavailable');
   surface.hidden=false;
   software={
-    surface,context,geometry:{box:boxVertices(),sphere:roundVertices(8,5),tube:tubeVertices(9,1),cone:tubeVertices(8,0),drum:tubeVertices(8,.79)},
+    surface,context,geometry:{cheese:cheeseVertices(),box:boxVertices(),sphere:roundVertices(8,5),tube:tubeVertices(9,1),cone:tubeVertices(8,0),drum:tubeVertices(8,.79)},
     objects:new WeakMap(),width:0,height:0,frame:null,pixels:null,depth:null
   };
 }
@@ -1612,6 +1640,11 @@ function softwareTriangle(a,b,c,fill,texture,base) {
       const hash=((Math.imul(ix,124683)^Math.imul(iz,453311))>>>2)%41;
       const grit=1+((((Math.floor(wx*128)*15731)^(Math.floor(wz*128)*789221))&15)-7)*.008;
       let value=texture===1?(.42+clamp((edge-.009)*46,0,1)*(.45+hash*.006))*grit:.79+grit*.09+(Math.abs(Math.sin(wx*11))>.53?.12:0);
+      if(texture===1){
+        const ix=clamp(Math.floor((wx+room)*shadeSize/level.width),0,shadeSize-1);
+        const iz=clamp(Math.floor(wz*shadeSize/world.level.depth),0,shadeSize-1);
+        value*=world.floorShade[iz*shadeSize+ix]/255;
+      }
       const sx=wx-actor.x,sz=wz-actor.z;
       value*=.53+.47*clamp(sx*sx*1.22+sz*sz*.8,0,1);
       value*=.67+.33*clamp(1.22*Math.min(room-Math.abs(wx),wz,level.depth-wz),0,1);
@@ -1628,6 +1661,37 @@ function softwareTriangle(a,b,c,fill,texture,base) {
   }
 }
 
+const shadeSize=128;
+let floorShadeTexture;
+function bakeFloorShade(){
+  const data=new Uint8Array(shadeSize*shadeSize).fill(255);
+  const {width,depth}=world.level;
+  const dx=width/shadeSize,dz=depth/shadeSize;
+  for(const o of world.obstacles){
+    if(o.min>2.5||o.max<.12)continue;
+    const blur=.36+.20*Math.max(0,o.min);
+    const x0=Math.max(0,Math.floor((o.x0-blur+width/2)/dx));
+    const x1=Math.min(shadeSize-1,Math.ceil((o.x1+blur+width/2)/dx));
+    const z0=Math.max(0,Math.floor((o.z0-blur)/dz));
+    const z1=Math.min(shadeSize-1,Math.ceil((o.z1+blur)/dz));
+    for(let z=z0;z<=z1;z++)for(let x=x0;x<=x1;x++){
+      const wx=(x+.5)*dx-width/2,wz=(z+.5)*dz;
+      const gap=Math.hypot(Math.max(0,o.x0-wx,wx-o.x1),Math.max(0,o.z0-wz,wz-o.z1));
+      const t=clamp(1-gap/blur,0,1);
+      const v=Math.round(255-(78/(1+.48*Math.max(0,o.min)))*t*t*(3-2*t));
+      const i=z*shadeSize+x;data[i]=Math.min(data[i],v);
+    }
+  }
+  world.floorShade=data;
+  if(gl&&!software){
+    floorShadeTexture??=gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D,floorShadeTexture);
+    gl.texImage2D(gl.TEXTURE_2D,0,gl.LUMINANCE,shadeSize,shadeSize,0,gl.LUMINANCE,gl.UNSIGNED_BYTE,data);
+    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
+    for(const axis of [gl.TEXTURE_WRAP_S,gl.TEXTURE_WRAP_T])gl.texParameteri(gl.TEXTURE_2D,axis,gl.CLAMP_TO_EDGE);
+  }
+}
 function environment(level) {
   const half=level.width/2, depth=level.depth, [hx,hz]=level.home;
   box(level.scene==='kitchen'?'846750':'93806b',0,-.08,depth/2,level.width+.3,.16,depth+.3,{material:1});
@@ -1680,6 +1744,7 @@ function createLevel(index) {
   world={level,shapes:[],obstacles:[],climbs:[],water:null,dryCheckpoint:null,checkpoint:null,food,lock,home:point(...level.home)};
   environment(level);
   levelScenes[level.scene]();
+  bakeFloorShade();
   const [x,z,yaw]=level.spawn;
   player={x,z,y:0,yaw,pitch:.035,eye:.33,vY:0,stamina:1,stance:false,low:false,ground:true,gait:0,amount:0,climb:null,splashUntil:0};
   const [cx,cz]=level.patrol[0], [nx,nz]=level.patrol[1];
@@ -1796,9 +1861,10 @@ function drawFoodModel(food,scale=1) {
   const piece=(type,tint,dx,dy,dz,w,h,d,options)=>draw(element(type,tint,x+dx*scale,y+dy*scale,z+dz*scale,
     w*scale,h*scale,d*scale,options));
   if(name.endsWith('奶酪')) {
-    piece('drum',color,0,.115,0,.48,.23,.43,{roll:.11,glow:.21});
+    piece('cheese',color,0,.115,0,.50,.23,.45,{glow:.21});
+    for(const [x,y,r] of [[-.14,.10,.075],[.10,.145,.10]])piece('sphere','b77938',x,y,-.198,r,r,.014);
     for(const [dx,dz,r] of [[-.10,-.09,.10],[.08,.08,.09],[.11,-.115,.07]]) {
-      piece('sphere','a97239',dx,.224,dz,r,.018,r);
+      piece('sphere','a97239',dx,.232,dz,r,.018,r);
     }
   } else if(name==='面包屑'||name==='饼干屑') {
     for(let i=0;i<5;i++){
